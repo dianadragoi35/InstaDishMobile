@@ -13,19 +13,7 @@ import { Picker } from '@react-native-picker/picker';
 import { useNavigation } from '@react-navigation/native';
 import { aiParsingService } from '../../services/aiParsingService';
 import { useRecipes } from '../../hooks/useRecipes';
-
-type ParsedRecipe = {
-  recipeName: string;
-  ingredients: Array<{
-    name: string;
-    quantity: string;
-    unit: string;
-  }>;
-  instructions: string;
-  prepTime: string;
-  cookTime: string;
-  servings: string;
-};
+import { ParseRecipeResponse } from '../../types';
 
 export default function AddRecipeScreen() {
   const navigation = useNavigation();
@@ -37,7 +25,7 @@ export default function AddRecipeScreen() {
 
   // Parsing state
   const [isParsing, setIsParsing] = useState(false);
-  const [parsedRecipe, setParsedRecipe] = useState<ParsedRecipe | null>(null);
+  const [parsedRecipe, setParsedRecipe] = useState<ParseRecipeResponse | null>(null);
 
   // Saving state
   const [isSaving, setIsSaving] = useState(false);
@@ -56,14 +44,7 @@ export default function AddRecipeScreen() {
         language,
       });
 
-      setParsedRecipe({
-        recipeName: result.recipeName,
-        ingredients: result.ingredients,
-        instructions: result.instructions,
-        prepTime: result.prepTime || '',
-        cookTime: result.cookTime || '',
-        servings: result.servings || '',
-      });
+      setParsedRecipe(result);
     } catch (error) {
       Alert.alert(
         'Parsing Failed',
@@ -206,7 +187,8 @@ export default function AddRecipeScreen() {
             {parsedRecipe.ingredients.map((ingredient, index) => (
               <View key={index} style={styles.ingredientItem}>
                 <Text style={styles.ingredientText}>
-                  {ingredient.quantity} {ingredient.unit} {ingredient.name}
+                  {ingredient.quantity} {ingredient.name}
+                  {ingredient.notes && ` (${ingredient.notes})`}
                 </Text>
               </View>
             ))}
