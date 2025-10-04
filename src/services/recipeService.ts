@@ -1,6 +1,18 @@
 import { supabase } from './supabase';
 import { Recipe, CreateRecipeRequest, RecipeIngredient, UpdateRecipeRequest } from '../types';
 
+type RecipeIngredientResponse = {
+  id: string;
+  recipe_id: string;
+  ingredient_id: string;
+  quantity: string | null;
+  notes: string | null;
+  ingredient: {
+    id: string;
+    name: string;
+  };
+};
+
 /**
  * Recipe Service
  * Handles all recipe-related database operations using Supabase
@@ -92,7 +104,7 @@ export const recipeService = {
         ingredient_id,
         quantity,
         notes,
-        ingredient:ingredients(id, name)
+        ingredient:ingredients!inner(id, name)
       `)
       .eq('recipe_id', recipeId);
 
@@ -100,12 +112,14 @@ export const recipeService = {
       throw new Error(`Failed to fetch recipe ingredients: ${error.message}`);
     }
 
-    return data.map(item => ({
+    const typedData = data as unknown as RecipeIngredientResponse[];
+
+    return typedData.map(item => ({
       id: item.id,
       recipeId: item.recipe_id,
       ingredientId: item.ingredient_id,
       quantity: item.quantity || '',
-      notes: item.notes,
+      notes: item.notes || undefined,
       ingredient: {
         id: item.ingredient.id,
         name: item.ingredient.name,
