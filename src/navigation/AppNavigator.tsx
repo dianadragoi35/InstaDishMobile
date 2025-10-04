@@ -2,7 +2,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 // Import screens (placeholders for now - will be implemented in subsequent issues)
 import RecipesListScreen from '../screens/recipes/RecipesListScreen';
@@ -30,7 +30,7 @@ export type ShoppingStackParamList = {
 
 export type RootTabParamList = {
   Recipes: undefined;
-  GroceryLists: undefined;
+  Lists: undefined;
   Shopping: undefined;
 };
 
@@ -121,17 +121,16 @@ export default function AppNavigator() {
           component={RecipesNavigator}
           options={{
             tabBarIcon: ({ color, size }) => (
-              <Icon name="book-open-variant" size={size} color={color} />
+              <MaterialCommunityIcons name="book-open-variant" size={size} color={color} />
             ),
           }}
         />
         <Tab.Screen
-          name="GroceryLists"
+          name="Lists"
           component={GroceryNavigator}
           options={{
-            tabBarLabel: 'Lists',
             tabBarIcon: ({ color, size }) => (
-              <Icon name="format-list-checks" size={size} color={color} />
+              <MaterialCommunityIcons name="format-list-checks" size={size} color={color} />
             ),
           }}
         />
@@ -140,7 +139,7 @@ export default function AppNavigator() {
           component={ShoppingNavigator}
           options={{
             tabBarIcon: ({ color, size }) => (
-              <Icon name="cart" size={size} color={color} />
+              <MaterialCommunityIcons name="cart" size={size} color={color} />
             ),
           }}
         />
