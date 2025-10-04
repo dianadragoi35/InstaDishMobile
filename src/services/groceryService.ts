@@ -1,6 +1,22 @@
 import { supabase } from './supabase';
 import { GroceryList, GroceryListItem, Ingredient } from '../types';
 
+type GroceryItemResponse = {
+  id: string;
+  grocery_list_id: string;
+  ingredient_id: string;
+  is_purchased: boolean;
+  quantity: string | null;
+  notes: string | null;
+  ingredient: {
+    id: string;
+    name: string;
+    in_pantry: boolean;
+    need_to_buy: boolean;
+    updated_at: string;
+  };
+};
+
 /**
  * Grocery List Service
  * Handles all grocery list and shopping list operations using Supabase
@@ -51,7 +67,7 @@ export const groceryService = {
         is_purchased,
         quantity,
         notes,
-        ingredient:ingredients(
+        ingredient:ingredients!inner(
           id,
           name,
           in_pantry,
@@ -65,13 +81,16 @@ export const groceryService = {
       throw new Error(`Failed to fetch grocery list items: ${error.message}`);
     }
 
-    return data.map(item => ({
+    // Type assertion for nested response
+    const typedData = data as unknown as GroceryItemResponse[];
+
+    return typedData.map(item => ({
       id: item.id,
       groceryListId: item.grocery_list_id,
       ingredientId: item.ingredient_id,
       isPurchased: item.is_purchased,
-      quantity: item.quantity,
-      notes: item.notes,
+      quantity: item.quantity || undefined,
+      notes: item.notes || undefined,
       ingredient: {
         id: item.ingredient.id,
         name: item.ingredient.name,
