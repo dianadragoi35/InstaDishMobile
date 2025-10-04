@@ -14,6 +14,65 @@ const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000;
 
 /**
+ * Validate parsed recipe data structure
+ * Ensures all required fields are present and properly formatted
+ * @param data - Raw data from API response
+ * @throws Error if validation fails
+ */
+function validateParsedRecipe(data: any): asserts data is ParseRecipeResponse {
+  if (!data || typeof data !== 'object') {
+    throw new Error('Invalid parsed recipe: Response is not an object');
+  }
+
+  // Validate required string fields
+  const requiredStringFields = ['recipeName', 'instructions'];
+  for (const field of requiredStringFields) {
+    if (!data[field] || typeof data[field] !== 'string' || !data[field].trim()) {
+      throw new Error(`Invalid parsed recipe: Missing or empty ${field}`);
+    }
+  }
+
+  // Validate optional string fields (can be empty but must be strings if present)
+  const optionalStringFields = ['prepTime', 'cookTime', 'servings'];
+  for (const field of optionalStringFields) {
+    if (data[field] !== undefined && typeof data[field] !== 'string') {
+      throw new Error(`Invalid parsed recipe: ${field} must be a string`);
+    }
+  }
+
+  // Validate ingredients array
+  if (!Array.isArray(data.ingredients)) {
+    throw new Error('Invalid parsed recipe: ingredients must be an array');
+  }
+
+  if (data.ingredients.length === 0) {
+    throw new Error('Invalid parsed recipe: At least one ingredient is required');
+  }
+
+  // Validate each ingredient
+  for (let i = 0; i < data.ingredients.length; i++) {
+    const ingredient = data.ingredients[i];
+
+    if (!ingredient || typeof ingredient !== 'object') {
+      throw new Error(`Invalid parsed recipe: Ingredient at index ${i} is not an object`);
+    }
+
+    if (!ingredient.name || typeof ingredient.name !== 'string' || !ingredient.name.trim()) {
+      throw new Error(`Invalid parsed recipe: Ingredient at index ${i} missing or empty name`);
+    }
+
+    if (!ingredient.quantity || typeof ingredient.quantity !== 'string') {
+      throw new Error(`Invalid parsed recipe: Ingredient at index ${i} missing or invalid quantity`);
+    }
+
+    // Notes are optional
+    if (ingredient.notes !== undefined && typeof ingredient.notes !== 'string') {
+      throw new Error(`Invalid parsed recipe: Ingredient at index ${i} has invalid notes`);
+    }
+  }
+}
+
+/**
  * AI Parsing Service
  * Handles communication with backend API for AI-powered recipe parsing using Google Gemini
  * Note: Gemini API key remains secure server-side
@@ -79,7 +138,7 @@ export const aiParsingService = {
         const data = await response.json();
 
         // Validate response structure
-        this.validateParsedRecipe(data);
+        validateParsedRecipe(data);
 
         return data;
       } catch (error) {
@@ -108,65 +167,6 @@ export const aiParsingService = {
     throw new Error(
       `Failed to parse recipe after ${MAX_RETRIES} attempts: ${lastError?.message || 'Unknown error'}`
     );
-  },
-
-  /**
-   * Validate parsed recipe data structure
-   * Ensures all required fields are present and properly formatted
-   * @param data - Raw data from API response
-   * @throws Error if validation fails
-   */
-  validateParsedRecipe(data: any): asserts data is ParseRecipeResponse {
-    if (!data || typeof data !== 'object') {
-      throw new Error('Invalid parsed recipe: Response is not an object');
-    }
-
-    // Validate required string fields
-    const requiredStringFields = ['recipeName', 'instructions'];
-    for (const field of requiredStringFields) {
-      if (!data[field] || typeof data[field] !== 'string' || !data[field].trim()) {
-        throw new Error(`Invalid parsed recipe: Missing or empty ${field}`);
-      }
-    }
-
-    // Validate optional string fields (can be empty but must be strings if present)
-    const optionalStringFields = ['prepTime', 'cookTime', 'servings'];
-    for (const field of optionalStringFields) {
-      if (data[field] !== undefined && typeof data[field] !== 'string') {
-        throw new Error(`Invalid parsed recipe: ${field} must be a string`);
-      }
-    }
-
-    // Validate ingredients array
-    if (!Array.isArray(data.ingredients)) {
-      throw new Error('Invalid parsed recipe: ingredients must be an array');
-    }
-
-    if (data.ingredients.length === 0) {
-      throw new Error('Invalid parsed recipe: At least one ingredient is required');
-    }
-
-    // Validate each ingredient
-    for (let i = 0; i < data.ingredients.length; i++) {
-      const ingredient = data.ingredients[i];
-
-      if (!ingredient || typeof ingredient !== 'object') {
-        throw new Error(`Invalid parsed recipe: Ingredient at index ${i} is not an object`);
-      }
-
-      if (!ingredient.name || typeof ingredient.name !== 'string' || !ingredient.name.trim()) {
-        throw new Error(`Invalid parsed recipe: Ingredient at index ${i} missing or empty name`);
-      }
-
-      if (!ingredient.quantity || typeof ingredient.quantity !== 'string') {
-        throw new Error(`Invalid parsed recipe: Ingredient at index ${i} missing or invalid quantity`);
-      }
-
-      // Notes are optional
-      if (ingredient.notes !== undefined && typeof ingredient.notes !== 'string') {
-        throw new Error(`Invalid parsed recipe: Ingredient at index ${i} has invalid notes`);
-      }
-    }
   },
 
   /**
