@@ -135,11 +135,13 @@ export const recipeService = {
    * @throws Error if not authenticated or database error occurs
    */
   async createRecipe(request: CreateRecipeRequest): Promise<string> {
-    // Verify user is authenticated
+    // Get current user from Supabase session
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      throw new Error('Not authenticated. Please log in to create recipes.');
+      throw new Error('Not authenticated. Please sign up or log in to create recipes.');
     }
+
+    const userId = user.id;
 
     // Validate required fields
     if (!request.recipeName?.trim()) {
@@ -149,16 +151,23 @@ export const recipeService = {
       throw new Error('Recipe instructions are required');
     }
 
+    // Helper function to truncate text to max length
+    const truncate = (text: string | undefined, maxLength: number): string | null => {
+      if (!text?.trim()) return null;
+      const trimmed = text.trim();
+      return trimmed.length > maxLength ? trimmed.substring(0, maxLength) : trimmed;
+    };
+
     // Create the recipe
     const { data: recipe, error: recipeError } = await supabase
       .from('recipes')
       .insert({
-        user_id: user.id,
+        user_id: userId,
         recipe_name: request.recipeName.trim(),
         instructions: request.instructions.trim(),
-        prep_time: request.prepTime?.trim() || null,
-        cook_time: request.cookTime?.trim() || null,
-        servings: request.servings?.trim() || null,
+        prep_time: truncate(request.prepTime, 50),
+        cook_time: truncate(request.cookTime, 50),
+        servings: truncate(request.servings, 50),
         image_url: request.imageUrl?.trim() || null,
       })
       .select()
@@ -181,7 +190,7 @@ export const recipeService = {
         const { data: existingIngredient } = await supabase
           .from('ingredients')
           .select('id')
-          .eq('user_id', user.id)
+          .eq('user_id', userId)
           .eq('name', ingredientName)
           .maybeSingle();
 
@@ -194,7 +203,7 @@ export const recipeService = {
           const { data: newIngredient, error: ingredientError } = await supabase
             .from('ingredients')
             .insert({
-              user_id: user.id,
+              user_id: userId,
               name: ingredientName,
               in_pantry: false,
               need_to_buy: false,
