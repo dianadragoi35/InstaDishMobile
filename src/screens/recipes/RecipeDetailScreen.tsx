@@ -15,6 +15,7 @@ import { RouteProp } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { recipeService } from '../../services/recipeService';
+import { ingredientService } from '../../services/ingredientService';
 import { RecipesStackParamList } from '../../navigation/AppNavigator';
 
 type RecipeDetailScreenRouteProp = RouteProp<RecipesStackParamList, 'RecipeDetail'>;
@@ -34,6 +35,7 @@ export default function RecipeDetailScreen() {
   const { recipeId } = route.params;
 
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isAddingToShoppingList, setIsAddingToShoppingList] = useState(false);
 
   // Fetch recipe data
   const {
@@ -140,6 +142,55 @@ export default function RecipeDetailScreen() {
     } catch (err) {
       console.error('Failed to share recipe:', err);
     }
+  };
+
+  /**
+   * Handle add all recipe ingredients to shopping list
+   */
+  const handleAddToShoppingList = async () => {
+    if (!ingredients || ingredients.length === 0) {
+      Alert.alert('No Ingredients', 'This recipe has no ingredients to add to the shopping list.');
+      return;
+    }
+
+    Alert.alert(
+      'Add to Shopping List',
+      `Add all ${ingredients.length} ingredients to your shopping list?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Add All',
+          onPress: async () => {
+            try {
+              setIsAddingToShoppingList(true);
+
+              // Update all ingredients to mark as need_to_buy
+              await Promise.all(
+                ingredients.map((item) =>
+                  ingredientService.updateNeedToBuy(item.ingredient.id, true)
+                )
+              );
+
+              // Invalidate shopping list cache to refresh
+              queryClient.invalidateQueries({ queryKey: ['shoppingList'] });
+
+              Alert.alert(
+                'Success',
+                `${ingredients.length} ${ingredients.length === 1 ? 'ingredient' : 'ingredients'} added to shopping list!`
+              );
+            } catch (err) {
+              console.error('Failed to add ingredients to shopping list:', err);
+              Alert.alert(
+                'Error',
+                err instanceof Error ? err.message : 'Failed to add ingredients to shopping list'
+              );
+            } finally {
+              setIsAddingToShoppingList(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   // Set header buttons
@@ -272,8 +323,26 @@ export default function RecipeDetailScreen() {
       {/* Ingredients Section */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <MaterialCommunityIcons name="food-variant" size={24} color="#D97706" />
-          <Text style={styles.sectionTitle}>Ingredients</Text>
+          <View style={styles.sectionHeaderLeft}>
+            <MaterialCommunityIcons name="food-variant" size={24} color="#D97706" />
+            <Text style={styles.sectionTitle}>Ingredients</Text>
+          </View>
+          {ingredients.length > 0 && (
+            <TouchableOpacity
+              style={styles.addToShoppingButton}
+              onPress={handleAddToShoppingList}
+              disabled={isAddingToShoppingList}
+            >
+              {isAddingToShoppingList ? (
+                <ActivityIndicator size="small" color="#D97706" />
+              ) : (
+                <>
+                  <MaterialCommunityIcons name="cart-plus" size={20} color="#D97706" />
+                  <Text style={styles.addToShoppingText}>Add to Shopping List</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
         </View>
 
         {ingredients.length === 0 ? (
@@ -424,13 +493,34 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 16,
+  },
+  sectionHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#111827',
+  },
+  addToShoppingButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#FEF3C7',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+  },
+  addToShoppingText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#D97706',
   },
   emptySection: {
     paddingVertical: 20,
