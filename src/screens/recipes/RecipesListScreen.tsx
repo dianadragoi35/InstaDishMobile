@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,8 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
+  TextInput,
+  RefreshControl,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -24,7 +26,9 @@ type RecipesListScreenNavigationProp = NativeStackNavigationProp<
  */
 export default function RecipesListScreen() {
   const navigation = useNavigation<RecipesListScreenNavigationProp>();
-  const { recipes, isLoading, error } = useRecipes();
+  const { recipes, isLoading, error, refetch } = useRecipes();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
   const handleAddRecipe = () => {
     navigation.navigate('AddRecipe');
@@ -33,6 +37,24 @@ export default function RecipesListScreen() {
   const handleRecipePress = (recipeId: string) => {
     navigation.navigate('RecipeDetail', { recipeId });
   };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  };
+
+  // Filter recipes based on search query
+  const filteredRecipes = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return recipes;
+    }
+
+    const query = searchQuery.toLowerCase();
+    return recipes.filter((recipe) =>
+      recipe.recipeName.toLowerCase().includes(query)
+    );
+  }, [recipes, searchQuery]);
 
   if (isLoading) {
     return (
@@ -55,17 +77,50 @@ export default function RecipesListScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <MaterialCommunityIcons name="magnify" size={20} color="#6B7280" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search recipes..."
+          placeholderTextColor="#9CA3AF"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
+            <MaterialCommunityIcons name="close-circle" size={20} color="#6B7280" />
+          </TouchableOpacity>
+        )}
+      </View>
+
       {recipes.length === 0 ? (
         <View style={styles.emptyContainer}>
           <MaterialCommunityIcons name="book-open-variant" size={64} color="#D1D5DB" />
           <Text style={styles.emptyText}>No recipes yet</Text>
           <Text style={styles.emptySubtext}>Tap the + button to add your first recipe</Text>
         </View>
+      ) : filteredRecipes.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <MaterialCommunityIcons name="magnify" size={64} color="#D1D5DB" />
+          <Text style={styles.emptyText}>No recipes found</Text>
+          <Text style={styles.emptySubtext}>Try a different search term</Text>
+        </View>
       ) : (
         <FlatList
-          data={recipes}
+          data={filteredRecipes}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContainer}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor="#D97706"
+              colors={['#D97706']}
+            />
+          }
           renderItem={({ item }) => (
             <TouchableOpacity
               style={styles.recipeCard}
@@ -114,6 +169,35 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    height: 44,
+    fontSize: 16,
+    color: '#111827',
+  },
+  clearButton: {
+    padding: 4,
   },
   centerContainer: {
     flex: 1,
