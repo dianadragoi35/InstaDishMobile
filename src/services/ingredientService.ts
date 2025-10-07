@@ -128,4 +128,47 @@ export const ingredientService = {
       updatedAt: item.updated_at,
     }));
   },
+
+  /**
+   * Update the need_to_buy status of an ingredient
+   * @param ingredientId - Ingredient UUID
+   * @param needToBuy - New need_to_buy status
+   * @throws Error if database error occurs
+   */
+  async updateNeedToBuy(ingredientId: string, needToBuy: boolean): Promise<void> {
+    if (!ingredientId) {
+      throw new Error('Ingredient ID is required');
+    }
+
+    const { error } = await supabase
+      .from('ingredients')
+      .update({ need_to_buy: needToBuy })
+      .eq('id', ingredientId);
+
+    if (error) {
+      throw new Error(`Failed to update ingredient: ${error.message}`);
+    }
+  },
+
+  /**
+   * Clear all items from shopping list (set need_to_buy to false for all user's ingredients)
+   * @throws Error if not authenticated or database error occurs
+   */
+  async clearShoppingList(): Promise<void> {
+    // Verify user is authenticated
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Not authenticated. Please log in.');
+    }
+
+    const { error } = await supabase
+      .from('ingredients')
+      .update({ need_to_buy: false })
+      .eq('user_id', user.id)
+      .eq('need_to_buy', true);
+
+    if (error) {
+      throw new Error(`Failed to clear shopping list: ${error.message}`);
+    }
+  },
 };
