@@ -12,58 +12,82 @@ import {
   ScrollView,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { supabase } from '../../services/supabase';
+import { useAuth } from '../../hooks/useAuth';
 
 /**
- * Simple Auth Screen for Testing
- * Allows sign up and login with email/password
+ * Authentication Screen
+ * Allows sign up and login with email/password using Supabase Auth
  */
 export default function AuthScreen() {
+  const { signUp, signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<{
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+  }>({});
 
-  const handleAuth = async () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please enter both email and password');
-      return;
+  // Email validation
+  function validateEmail(email: string): boolean {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  }
+
+  // Form validation
+  function validateForm(): boolean {
+    const newErrors: typeof errors = {};
+
+    // Email validation
+    if (!email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!validateEmail(email.trim())) {
+      newErrors.email = 'Please enter a valid email address';
     }
 
-    if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
+    // Password validation
+    if (!password) {
+      newErrors.password = 'Password is required';
+    } else if (password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+
+    // Confirm password validation (only for sign up)
+    if (isSignUp) {
+      if (!confirmPassword) {
+        newErrors.confirmPassword = 'Please confirm your password';
+      } else if (password !== confirmPassword) {
+        newErrors.confirmPassword = 'Passwords do not match';
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }
+
+  async function handleAuth(): Promise<void> {
+    // Clear previous errors
+    setErrors({});
+
+    // Validate form
+    if (!validateForm()) {
       return;
     }
 
     setIsLoading(true);
     try {
       if (isSignUp) {
-        // Sign up
-        const { data, error } = await supabase.auth.signUp({
-          email: email.trim(),
-          password: password,
-        });
-
-        if (error) throw error;
-
-        if (data.user) {
-          Alert.alert(
-            'Success',
-            'Account created! You can now start using InstaDish.'
-          );
-        }
+        await signUp(email.trim(), password);
+        Alert.alert(
+          'Success',
+          'Account created! You can now start using InstaDish.'
+        );
       } else {
-        // Sign in
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password: password,
-        });
-
-        if (error) throw error;
-
-        if (data.user) {
-          Alert.alert('Success', 'Welcome back!');
-        }
+        await signIn(email.trim(), password);
+        Alert.alert('Success', 'Welcome back!');
       }
     } catch (error) {
       Alert.alert(
@@ -73,7 +97,13 @@ export default function AuthScreen() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }
+
+  function handleSwitchMode(): void {
+    setIsSignUp(!isSignUp);
+    setErrors({});
+    setConfirmPassword('');
+  }
 
   return (
     <KeyboardAvoidingView
@@ -93,32 +123,77 @@ export default function AuthScreen() {
         </View>
 
         <View style={styles.form}>
-          <View style={styles.inputContainer}>
-            <MaterialCommunityIcons name="email" size={20} color="#6B7280" />
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              autoComplete="email"
-              editable={!isLoading}
-            />
+          <View style={styles.inputWrapper}>
+            <View
+              style={[
+                styles.inputContainer,
+                errors.email && styles.inputContainerError,
+              ]}
+            >
+              <MaterialCommunityIcons name="email" size={20} color="#6B7280" />
+              <TextInput
+                style={styles.input}
+                placeholder="Email"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                autoComplete="email"
+                editable={!isLoading}
+              />
+            </View>
+            {errors.email && (
+              <Text style={styles.errorText}>{errors.email}</Text>
+            )}
           </View>
 
-          <View style={styles.inputContainer}>
-            <MaterialCommunityIcons name="lock" size={20} color="#6B7280" />
-            <TextInput
-              style={styles.input}
-              placeholder="Password (min 6 characters)"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoCapitalize="none"
-              editable={!isLoading}
-            />
+          <View style={styles.inputWrapper}>
+            <View
+              style={[
+                styles.inputContainer,
+                errors.password && styles.inputContainerError,
+              ]}
+            >
+              <MaterialCommunityIcons name="lock" size={20} color="#6B7280" />
+              <TextInput
+                style={styles.input}
+                placeholder="Password (min 6 characters)"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                autoCapitalize="none"
+                editable={!isLoading}
+              />
+            </View>
+            {errors.password && (
+              <Text style={styles.errorText}>{errors.password}</Text>
+            )}
           </View>
+
+          {isSignUp && (
+            <View style={styles.inputWrapper}>
+              <View
+                style={[
+                  styles.inputContainer,
+                  errors.confirmPassword && styles.inputContainerError,
+                ]}
+              >
+                <MaterialCommunityIcons name="lock-check" size={20} color="#6B7280" />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Confirm Password"
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry
+                  autoCapitalize="none"
+                  editable={!isLoading}
+                />
+              </View>
+              {errors.confirmPassword && (
+                <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+              )}
+            </View>
+          )}
 
           <TouchableOpacity
             style={[styles.button, isLoading && styles.buttonDisabled]}
@@ -136,7 +211,7 @@ export default function AuthScreen() {
 
           <TouchableOpacity
             style={styles.switchButton}
-            onPress={() => setIsSignUp(!isSignUp)}
+            onPress={handleSwitchMode}
             disabled={isLoading}
           >
             <Text style={styles.switchText}>
@@ -186,6 +261,9 @@ const styles = StyleSheet.create({
     maxWidth: 400,
     alignSelf: 'center',
   },
+  inputWrapper: {
+    marginBottom: 16,
+  },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -193,15 +271,24 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    marginBottom: 16,
     borderWidth: 1,
     borderColor: '#E5E7EB',
+  },
+  inputContainerError: {
+    borderColor: '#EF4444',
+    borderWidth: 2,
   },
   input: {
     flex: 1,
     marginLeft: 12,
     fontSize: 16,
     color: '#111827',
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
   },
   button: {
     backgroundColor: '#D97706',

@@ -3,8 +3,10 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { TouchableOpacity, Alert } from 'react-native';
+import { useAuth } from '../hooks/useAuth';
 
-// Import screens (placeholders for now - will be implemented in subsequent issues)
+// Import screens
 import RecipesListScreen from '../screens/recipes/RecipesListScreen';
 import RecipeDetailScreen from '../screens/recipes/RecipeDetailScreen';
 import AddRecipeScreen from '../screens/recipes/AddRecipeScreen';
@@ -46,12 +48,46 @@ const ShoppingStack = createNativeStackNavigator<ShoppingStackParamList>();
  * Contains: RecipesList -> RecipeDetail, AddRecipe, EditRecipe
  */
 function RecipesNavigator() {
+  const { signOut } = useAuth();
+
+  async function handleSignOut(): Promise<void> {
+    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Sign Out',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await signOut();
+          } catch (error) {
+            Alert.alert('Error', 'Failed to sign out');
+          }
+        },
+      },
+    ]);
+  }
+
   return (
     <RecipesStack.Navigator>
       <RecipesStack.Screen
         name="RecipesList"
         component={RecipesListScreen}
-        options={{ title: 'My Recipes' }}
+        options={{
+          title: 'My Recipes',
+          headerRight: () => (
+            <TouchableOpacity
+              onPress={handleSignOut}
+              style={{
+                padding: 8,
+                marginRight: 8,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
+              <MaterialCommunityIcons name="logout" size={24} color="#D97706" />
+            </TouchableOpacity>
+          ),
+        }}
       />
       <RecipesStack.Screen
         name="RecipeDetail"
