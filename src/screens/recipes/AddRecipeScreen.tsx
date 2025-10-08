@@ -12,15 +12,22 @@ import {
 import { Picker } from '@react-native-picker/picker';
 import { useNavigation } from '@react-navigation/native';
 import { aiParsingService } from '../../services/aiParsingService';
+import { youtubeService } from '../../services/youtubeService';
 import { useRecipes } from '../../hooks/useRecipes';
 import { ParseRecipeResponse } from '../../types';
+
+type InputTab = 'text' | 'youtube';
 
 export default function AddRecipeScreen() {
   const navigation = useNavigation();
   const { createRecipeAsync } = useRecipes();
 
+  // Tab state
+  const [activeTab, setActiveTab] = useState<InputTab>('text');
+
   // Input state
   const [recipeText, setRecipeText] = useState('');
+  const [youtubeUrl, setYoutubeUrl] = useState('');
   const [language, setLanguage] = useState('English');
 
   // Parsing state
@@ -30,8 +37,8 @@ export default function AddRecipeScreen() {
   // Saving state
   const [isSaving, setIsSaving] = useState(false);
 
-  // Handle recipe parsing
-  const handleParse = async () => {
+  // Handle recipe text parsing
+  const handleParseText = async () => {
     if (!recipeText.trim()) {
       Alert.alert('Error', 'Please paste some recipe text first');
       return;
@@ -52,6 +59,50 @@ export default function AddRecipeScreen() {
       );
     } finally {
       setIsParsing(false);
+    }
+  };
+
+  // Handle YouTube video parsing
+  const handleParseYoutube = async () => {
+    if (!youtubeUrl.trim()) {
+      Alert.alert('Error', 'Please paste a YouTube URL first');
+      return;
+    }
+
+    if (!youtubeService.isValidYouTubeUrl(youtubeUrl)) {
+      Alert.alert('Error', 'Invalid YouTube URL format. Please paste a valid YouTube video URL.');
+      return;
+    }
+
+    setIsParsing(true);
+    try {
+      const result = await youtubeService.extractRecipeFromYouTubeVideo(youtubeUrl, language);
+
+      if (!result.success || !result.recipe) {
+        Alert.alert(
+          'Extraction Failed',
+          result.error || 'Failed to extract recipe from video. Please try another video.'
+        );
+        return;
+      }
+
+      setParsedRecipe(result.recipe);
+    } catch (error) {
+      Alert.alert(
+        'Extraction Failed',
+        error instanceof Error ? error.message : 'Failed to extract recipe from YouTube video. Please try again.'
+      );
+    } finally {
+      setIsParsing(false);
+    }
+  };
+
+  // Handle parse based on active tab
+  const handleParse = () => {
+    if (activeTab === 'text') {
+      handleParseText();
+    } else if (activeTab === 'youtube') {
+      handleParseYoutube();
     }
   };
 
@@ -123,20 +174,61 @@ export default function AddRecipeScreen() {
         <>
           {/* Recipe Input Section */}
           <Text style={styles.title}>Add New Recipe</Text>
-          <Text style={styles.subtitle}>Paste your recipe text below and let AI parse it for you</Text>
+          <Text style={styles.subtitle}>Choose an input method below</Text>
 
-          <View style={styles.section}>
-            <Text style={styles.label}>Recipe Text</Text>
-            <TextInput
-              style={styles.textArea}
-              multiline
-              numberOfLines={10}
-              value={recipeText}
-              onChangeText={setRecipeText}
-              placeholder="Paste your recipe here..."
-              textAlignVertical="top"
-            />
+          {/* Tab Navigation */}
+          <View style={styles.tabContainer}>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'text' && styles.activeTab]}
+              onPress={() => setActiveTab('text')}
+            >
+              <Text style={[styles.tabText, activeTab === 'text' && styles.activeTabText]}>
+                Recipe Text
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'youtube' && styles.activeTab]}
+              onPress={() => setActiveTab('youtube')}
+            >
+              <Text style={[styles.tabText, activeTab === 'youtube' && styles.activeTabText]}>
+                YouTube Video
+              </Text>
+            </TouchableOpacity>
           </View>
+
+          {/* Tab Content */}
+          {activeTab === 'text' && (
+            <View style={styles.section}>
+              <Text style={styles.label}>Recipe Text</Text>
+              <TextInput
+                style={styles.textArea}
+                multiline
+                numberOfLines={10}
+                value={recipeText}
+                onChangeText={setRecipeText}
+                placeholder="Paste your recipe here..."
+                textAlignVertical="top"
+              />
+            </View>
+          )}
+
+          {activeTab === 'youtube' && (
+            <View style={styles.section}>
+              <Text style={styles.label}>YouTube Video URL</Text>
+              <TextInput
+                style={styles.input}
+                value={youtubeUrl}
+                onChangeText={setYoutubeUrl}
+                placeholder="https://www.youtube.com/watch?v=..."
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="url"
+              />
+              <Text style={styles.hint}>
+                Paste a link to a cooking video with captions/transcripts enabled
+              </Text>
+            </View>
+          )}
 
           <View style={styles.section}>
             <Text style={styles.label}>Language</Text>
@@ -163,7 +255,9 @@ export default function AddRecipeScreen() {
             {isParsing ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.buttonText}>Parse Recipe</Text>
+              <Text style={styles.buttonText}>
+                {activeTab === 'youtube' ? 'Extract Recipe from Video' : 'Parse Recipe'}
+              </Text>
             )}
           </TouchableOpacity>
         </>
@@ -281,7 +375,44 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 14,
     color: '#6B7280',
-    marginBottom: 24,
+    marginBottom: 16,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    marginBottom: 20,
+    borderRadius: 8,
+    backgroundColor: '#F3F4F6',
+    padding: 4,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  activeTab: {
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6B7280',
+  },
+  activeTabText: {
+    color: '#111827',
+    fontWeight: '600',
+  },
+  hint: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginTop: 6,
+    fontStyle: 'italic',
   },
   section: {
     marginBottom: 20,
