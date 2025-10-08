@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useNavigation } from '@react-navigation/native';
+import { MaterialIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { aiParsingService } from '../../services/aiParsingService';
 import { youtubeService } from '../../services/youtubeService';
 import { websiteService } from '../../services/websiteService';
@@ -24,7 +25,7 @@ export default function AddRecipeScreen() {
   const { createRecipeAsync } = useRecipes();
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<InputTab>('text');
+  const [activeTab, setActiveTab] = useState<InputTab>('website');
 
   // Input state
   const [recipeText, setRecipeText] = useState('');
@@ -213,49 +214,67 @@ export default function AddRecipeScreen() {
         <>
           {/* Recipe Input Section */}
           <Text style={styles.title}>Add New Recipe</Text>
-          <Text style={styles.subtitle}>Choose an input method below</Text>
+          <Text style={styles.subtitle}>Select your preferred import method</Text>
 
           {/* Tab Navigation */}
           <View style={styles.tabContainer}>
             <TouchableOpacity
-              style={[styles.tab, activeTab === 'text' && styles.activeTab]}
-              onPress={() => setActiveTab('text')}
+              style={[styles.tab, activeTab === 'website' && styles.activeTab]}
+              onPress={() => setActiveTab('website')}
             >
-              <Text style={[styles.tabText, activeTab === 'text' && styles.activeTabText]}>
-                Recipe Text
+              <FontAwesome5
+                name="link"
+                size={18}
+                color={activeTab === 'website' ? '#D97706' : '#6B7280'}
+              />
+              <Text style={[styles.tabText, activeTab === 'website' && styles.activeTabText]}>
+                URL
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.tab, activeTab === 'youtube' && styles.activeTab]}
               onPress={() => setActiveTab('youtube')}
             >
+              <Ionicons
+                name="logo-youtube"
+                size={20}
+                color={activeTab === 'youtube' ? '#D97706' : '#6B7280'}
+              />
               <Text style={[styles.tabText, activeTab === 'youtube' && styles.activeTabText]}>
-                YouTube Video
+                Video
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.tab, activeTab === 'website' && styles.activeTab]}
-              onPress={() => setActiveTab('website')}
+              style={[styles.tab, activeTab === 'text' && styles.activeTab]}
+              onPress={() => setActiveTab('text')}
             >
-              <Text style={[styles.tabText, activeTab === 'website' && styles.activeTabText]}>
-                Website URL
+              <MaterialIcons
+                name="description"
+                size={20}
+                color={activeTab === 'text' ? '#D97706' : '#6B7280'}
+              />
+              <Text style={[styles.tabText, activeTab === 'text' && styles.activeTabText]}>
+                Text
               </Text>
             </TouchableOpacity>
           </View>
 
           {/* Tab Content */}
-          {activeTab === 'text' && (
+          {activeTab === 'website' && (
             <View style={styles.section}>
-              <Text style={styles.label}>Recipe Text</Text>
+              <Text style={styles.label}>Website URL</Text>
               <TextInput
-                style={styles.textArea}
-                multiline
-                numberOfLines={10}
-                value={recipeText}
-                onChangeText={setRecipeText}
-                placeholder="Paste your recipe here..."
-                textAlignVertical="top"
+                style={styles.input}
+                value={websiteUrl}
+                onChangeText={setWebsiteUrl}
+                placeholder="https://www.example.com/recipe..."
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="url"
               />
+              <Text style={styles.hint}>
+                Paste a link to any recipe website or blog post
+              </Text>
             </View>
           )}
 
@@ -277,21 +296,18 @@ export default function AddRecipeScreen() {
             </View>
           )}
 
-          {activeTab === 'website' && (
+          {activeTab === 'text' && (
             <View style={styles.section}>
-              <Text style={styles.label}>Website URL</Text>
+              <Text style={styles.label}>Recipe Text</Text>
               <TextInput
-                style={styles.input}
-                value={websiteUrl}
-                onChangeText={setWebsiteUrl}
-                placeholder="https://www.example.com/recipe..."
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="url"
+                style={styles.textArea}
+                multiline
+                numberOfLines={10}
+                value={recipeText}
+                onChangeText={setRecipeText}
+                placeholder="Paste your recipe here..."
+                textAlignVertical="top"
               />
-              <Text style={styles.hint}>
-                Paste a link to any recipe website or blog post
-              </Text>
             </View>
           )}
 
@@ -459,6 +475,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 6,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
   },
   activeTab: {
     backgroundColor: '#fff',
@@ -474,7 +493,7 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   activeTabText: {
-    color: '#111827',
+    color: '#D97706',
     fontWeight: '600',
   },
   hint: {
