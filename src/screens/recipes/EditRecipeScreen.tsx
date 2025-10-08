@@ -113,14 +113,40 @@ export default function EditRecipeScreen() {
     performSave();
   };
 
+  /**
+   * Normalize instructions text:
+   * 1. Insert newlines before numbered steps (if missing)
+   * 2. Strip leading numbers (1., 2., 1), 2), etc.)
+   * 3. Ensure each step is on a new line
+   * 4. Remove empty lines
+   */
+  const normalizeInstructions = (text: string): string => {
+    // First, insert newlines before numbered patterns if they're missing
+    // This handles: "1. Step one 2. Step two" -> "1. Step one\n2. Step two"
+    let normalized = text.replace(/\s+(\d+[\.\)])\s+/g, '\n$1 ');
+
+    // Now split by newlines, clean up, and remove leading numbers
+    return normalized
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
+      .map(line => {
+        // Remove leading numbers like "1. ", "2) ", "3. ", etc.
+        return line.replace(/^\d+[\.\)]\s*/, '');
+      })
+      .join('\n');
+  };
+
   const performSave = async () => {
     setIsSaving(true);
     try {
+      const normalizedInstructions = normalizeInstructions(instructions);
+
       await updateRecipeAsync({
         id: recipeId,
         updates: {
           recipeName,
-          instructions,
+          instructions: normalizedInstructions,
           prepTime: prepTime.trim() || undefined,
           cookTime: cookTime.trim() || undefined,
           servings: servings.trim() || undefined,
