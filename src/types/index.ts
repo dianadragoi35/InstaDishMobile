@@ -85,6 +85,11 @@ export interface UpdateRecipeRequest {
   cookTime?: string;
   servings?: string;
   imageUrl?: string;
+  ingredients?: Array<{
+    name: string;
+    quantity: string;
+    notes?: string;
+  }>;
 }
 
 export interface CreateGroceryListRequest {
@@ -120,6 +125,7 @@ export type RootStackParamList = {
   RecipesList: undefined;
   RecipeDetail: { recipeId: string };
   AddRecipe: undefined;
+  EditRecipe: { recipeId: string };
   GroceryLists: undefined;
   GroceryListDetail: { listId: string };
   CreateGroceryList: undefined;

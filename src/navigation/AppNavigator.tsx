@@ -8,6 +8,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import RecipesListScreen from '../screens/recipes/RecipesListScreen';
 import RecipeDetailScreen from '../screens/recipes/RecipeDetailScreen';
 import AddRecipeScreen from '../screens/recipes/AddRecipeScreen';
+import EditRecipeScreen from '../screens/recipes/EditRecipeScreen';
 import GroceryListsScreen from '../screens/grocery/GroceryListsScreen';
 import GroceryListDetailScreen from '../screens/grocery/GroceryListDetailScreen';
 import ShoppingListScreen from '../screens/grocery/ShoppingListScreen';
@@ -17,6 +18,7 @@ export type RecipesStackParamList = {
   RecipesList: undefined;
   RecipeDetail: { recipeId: string };
   AddRecipe: undefined;
+  EditRecipe: { recipeId: string };
 };
 
 export type GroceryStackParamList = {
@@ -41,7 +43,7 @@ const ShoppingStack = createNativeStackNavigator<ShoppingStackParamList>();
 
 /**
  * Recipes Stack Navigator
- * Contains: RecipesList -> RecipeDetail, AddRecipe
+ * Contains: RecipesList -> RecipeDetail, AddRecipe, EditRecipe
  */
 function RecipesNavigator() {
   return (
@@ -60,6 +62,11 @@ function RecipesNavigator() {
         name="AddRecipe"
         component={AddRecipeScreen}
         options={{ title: 'Add Recipe' }}
+      />
+      <RecipesStack.Screen
+        name="EditRecipe"
+        component={EditRecipeScreen}
+        options={{ title: 'Edit Recipe' }}
       />
     </RecipesStack.Navigator>
   );
