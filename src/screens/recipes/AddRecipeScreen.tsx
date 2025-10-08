@@ -339,19 +339,18 @@ export default function AddRecipeScreen() {
 
           <View style={styles.section}>
             <Text style={styles.label}>Language</Text>
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={language}
-                onValueChange={(value) => setLanguage(value)}
-                style={styles.picker}
-              >
-                <Picker.Item label="English" value="English" />
-                <Picker.Item label="Spanish" value="Spanish" />
-                <Picker.Item label="French" value="French" />
-                <Picker.Item label="German" value="German" />
-                <Picker.Item label="Italian" value="Italian" />
-              </Picker>
-            </View>
+            <Picker
+              selectedValue={language}
+              onValueChange={(value) => setLanguage(value)}
+            >
+              <Picker.Item label="English" value="English" />
+              <Picker.Item label="Romanian" value="Romanian" />
+              <Picker.Item label='Dutch' value='Dutch' />
+              <Picker.Item label="Spanish" value="Spanish" />
+              <Picker.Item label="French" value="French" />
+              <Picker.Item label="German" value="German" />
+              <Picker.Item label="Italian" value="Italian" />
+            </Picker>
           </View>
 
           <TouchableOpacity
@@ -563,13 +562,10 @@ const styles = StyleSheet.create({
     minHeight: 120,
   },
   pickerContainer: {
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    overflow: 'hidden',
+    // Removed custom container to follow canonical iOS Picker usage
   },
   picker: {
-    height: 50,
+    // Removed explicit height; rely on platform defaults
   },
   ingredientItem: {
     paddingVertical: 8,
