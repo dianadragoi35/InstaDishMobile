@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import recipesRouter from './routes/recipes';
+import youtubeRouter from './routes/youtube';
 
 // Load environment variables
 dotenv.config();
@@ -20,6 +21,7 @@ app.get('/health', (req, res) => {
 
 // API routes
 app.use('/api/recipes', recipesRouter);
+app.use('/api/youtube', youtubeRouter);
 
 // 404 handler
 app.use((req, res) => {
@@ -37,5 +39,6 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 InstaDish Mobile Backend running on http://localhost:${PORT}`);
   console.log(`📱 Health check: http://localhost:${PORT}/health`);
   console.log(`🍽️  Recipe parse: http://localhost:${PORT}/api/recipes/parse`);
+  console.log(`🎬 YouTube transcript: http://localhost:${PORT}/api/youtube/transcript`);
   console.log(`\n📲 For mobile device, use: http://192.168.2.27:${PORT}`);
 });
