@@ -257,10 +257,10 @@ export const recipeService = {
   },
 
   /**
-   * Update an existing recipe's basic details
-   * Note: This does NOT update ingredients. Use separate methods for ingredient management.
+   * Update an existing recipe including ingredients
+   * Handles both recipe metadata and ingredient synchronization
    * @param id - Recipe UUID
-   * @param updates - Partial recipe updates
+   * @param updates - Partial recipe updates including ingredients
    * @throws Error if database error occurs
    */
   async updateRecipe(id: string, updates: UpdateRecipeRequest): Promise<void> {
@@ -272,34 +272,141 @@ export const recipeService = {
       return; // No updates to apply
     }
 
-    const updateData: any = {};
-
-    if (updates.recipeName !== undefined) {
-      updateData.recipe_name = updates.recipeName?.trim() || null;
-    }
-    if (updates.instructions !== undefined) {
-      updateData.instructions = updates.instructions?.trim() || null;
-    }
-    if (updates.prepTime !== undefined) {
-      updateData.prep_time = updates.prepTime?.trim() || null;
-    }
-    if (updates.cookTime !== undefined) {
-      updateData.cook_time = updates.cookTime?.trim() || null;
-    }
-    if (updates.servings !== undefined) {
-      updateData.servings = updates.servings?.trim() || null;
-    }
-    if (updates.imageUrl !== undefined) {
-      updateData.image_url = updates.imageUrl?.trim() || null;
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Not authenticated');
     }
 
-    const { error } = await supabase
-      .from('recipes')
-      .update(updateData)
-      .eq('id', id);
+    const userId = user.id;
 
-    if (error) {
-      throw new Error(`Failed to update recipe: ${error.message}`);
+    // Update recipe metadata if provided
+    const hasMetadataUpdates = updates.recipeName !== undefined ||
+      updates.instructions !== undefined ||
+      updates.prepTime !== undefined ||
+      updates.cookTime !== undefined ||
+      updates.servings !== undefined ||
+      updates.imageUrl !== undefined;
+
+    if (hasMetadataUpdates) {
+      const updateData: any = {};
+
+      if (updates.recipeName !== undefined) {
+        updateData.recipe_name = updates.recipeName?.trim() || null;
+      }
+      if (updates.instructions !== undefined) {
+        updateData.instructions = updates.instructions?.trim() || null;
+      }
+      if (updates.prepTime !== undefined) {
+        updateData.prep_time = updates.prepTime?.trim() || null;
+      }
+      if (updates.cookTime !== undefined) {
+        updateData.cook_time = updates.cookTime?.trim() || null;
+      }
+      if (updates.servings !== undefined) {
+        updateData.servings = updates.servings?.trim() || null;
+      }
+      if (updates.imageUrl !== undefined) {
+        updateData.image_url = updates.imageUrl?.trim() || null;
+      }
+
+      const { error } = await supabase
+        .from('recipes')
+        .update(updateData)
+        .eq('id', id);
+
+      if (error) {
+        throw new Error(`Failed to update recipe: ${error.message}`);
+      }
+    }
+
+    // Update ingredients if provided
+    if (updates.ingredients !== undefined) {
+      // Delete all existing recipe-ingredient junctions for this recipe
+      const { error: deleteError } = await supabase
+        .from('recipe_ingredients')
+        .delete()
+        .eq('recipe_id', id);
+
+      if (deleteError) {
+        throw new Error(`Failed to update recipe ingredients: ${deleteError.message}`);
+      }
+
+      // Re-create ingredient junctions with new data
+      if (updates.ingredients.length > 0) {
+        for (const ingredient of updates.ingredients) {
+          if (!ingredient.name?.trim()) {
+            continue; // Skip empty ingredient names
+          }
+
+          const ingredientName = ingredient.name.trim();
+
+          // Find existing ingredient or create new one
+          const { data: existingIngredient } = await supabase
+            .from('ingredients')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('name', ingredientName)
+            .maybeSingle();
+
+          let ingredientId: string;
+
+          if (existingIngredient) {
+            ingredientId = existingIngredient.id;
+          } else {
+            // Create new ingredient
+            const { data: newIngredient, error: ingredientError } = await supabase
+              .from('ingredients')
+              .insert({
+                user_id: userId,
+                name: ingredientName,
+                in_pantry: false,
+                need_to_buy: false,
+              })
+              .select()
+              .single();
+
+            if (ingredientError) {
+              // If duplicate error, try to fetch it again (race condition)
+              if (ingredientError.code === '23505') {
+                const { data: retryIngredient } = await supabase
+                  .from('ingredients')
+                  .select('id')
+                  .eq('user_id', userId)
+                  .eq('name', ingredientName)
+                  .single();
+
+                if (retryIngredient) {
+                  ingredientId = retryIngredient.id;
+                } else {
+                  throw new Error(`Failed to create ingredient "${ingredientName}": ${ingredientError.message}`);
+                }
+              } else {
+                throw new Error(`Failed to create ingredient "${ingredientName}": ${ingredientError.message}`);
+              }
+            } else {
+              ingredientId = newIngredient.id;
+            }
+          }
+
+          // Link ingredient to recipe via junction table
+          const { error: junctionError } = await supabase
+            .from('recipe_ingredients')
+            .insert({
+              recipe_id: id,
+              ingredient_id: ingredientId,
+              quantity: ingredient.quantity?.trim() || null,
+              notes: ingredient.notes?.trim() || null,
+            });
+
+          if (junctionError) {
+            // If it's a duplicate, ignore it (ingredient already linked)
+            if (junctionError.code !== '23505') {
+              throw new Error(`Failed to link ingredient "${ingredientName}" to recipe: ${junctionError.message}`);
+            }
+          }
+        }
+      }
     }
   },
 

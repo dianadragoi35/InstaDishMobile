@@ -101,14 +101,10 @@ export default function RecipeDetailScreen() {
 
   /**
    * Handle edit recipe
-   * TODO: Implement EditRecipeScreen in future issue
+   * Navigate to EditRecipeScreen
    */
   const handleEdit = () => {
-    Alert.alert(
-      'Coming Soon',
-      'Recipe editing will be available in a future update.',
-      [{ text: 'OK' }]
-    );
+    navigation.navigate('EditRecipe', { recipeId });
   };
 
   /**
