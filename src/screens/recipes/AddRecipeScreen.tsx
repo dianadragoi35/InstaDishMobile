@@ -13,10 +13,11 @@ import { Picker } from '@react-native-picker/picker';
 import { useNavigation } from '@react-navigation/native';
 import { aiParsingService } from '../../services/aiParsingService';
 import { youtubeService } from '../../services/youtubeService';
+import { websiteService } from '../../services/websiteService';
 import { useRecipes } from '../../hooks/useRecipes';
 import { ParseRecipeResponse } from '../../types';
 
-type InputTab = 'text' | 'youtube';
+type InputTab = 'text' | 'youtube' | 'website';
 
 export default function AddRecipeScreen() {
   const navigation = useNavigation();
@@ -28,6 +29,7 @@ export default function AddRecipeScreen() {
   // Input state
   const [recipeText, setRecipeText] = useState('');
   const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [websiteUrl, setWebsiteUrl] = useState('');
   const [language, setLanguage] = useState('English');
 
   // Parsing state
@@ -97,12 +99,49 @@ export default function AddRecipeScreen() {
     }
   };
 
+  // Handle website URL parsing
+  const handleParseWebsite = async () => {
+    if (!websiteUrl.trim()) {
+      Alert.alert('Error', 'Please paste a website URL first');
+      return;
+    }
+
+    if (!websiteService.isValidWebsiteUrl(websiteUrl)) {
+      Alert.alert('Error', 'Invalid website URL format. Please paste a valid URL starting with http:// or https://');
+      return;
+    }
+
+    setIsParsing(true);
+    try {
+      const result = await websiteService.extractRecipeFromWebsite(websiteUrl, language);
+
+      if (!result.success || !result.recipe) {
+        Alert.alert(
+          'Extraction Failed',
+          result.error || 'Failed to extract recipe from website. Please try another website.'
+        );
+        return;
+      }
+
+      setParsedRecipe(result.recipe);
+    } catch (error) {
+      Alert.alert(
+        'Extraction Failed',
+        error instanceof Error ? error.message : 'Failed to extract recipe from website. Please try again.'
+      );
+    } finally {
+      setIsParsing(false);
+    }
+  };
+
   // Handle parse based on active tab
   const handleParse = () => {
     if (activeTab === 'text') {
       handleParseText();
     } else if (activeTab === 'youtube') {
       handleParseYoutube();
+    } else if (activeTab === 'website') {
+      handleParseWebsite();
     }
   };
 
@@ -194,6 +233,14 @@ export default function AddRecipeScreen() {
                 YouTube Video
               </Text>
             </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'website' && styles.activeTab]}
+              onPress={() => setActiveTab('website')}
+            >
+              <Text style={[styles.tabText, activeTab === 'website' && styles.activeTabText]}>
+                Website URL
+              </Text>
+            </TouchableOpacity>
           </View>
 
           {/* Tab Content */}
@@ -230,6 +277,24 @@ export default function AddRecipeScreen() {
             </View>
           )}
 
+          {activeTab === 'website' && (
+            <View style={styles.section}>
+              <Text style={styles.label}>Website URL</Text>
+              <TextInput
+                style={styles.input}
+                value={websiteUrl}
+                onChangeText={setWebsiteUrl}
+                placeholder="https://www.example.com/recipe..."
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="url"
+              />
+              <Text style={styles.hint}>
+                Paste a link to any recipe website or blog post
+              </Text>
+            </View>
+          )}
+
           <View style={styles.section}>
             <Text style={styles.label}>Language</Text>
             <View style={styles.pickerContainer}>
@@ -256,7 +321,11 @@ export default function AddRecipeScreen() {
               <ActivityIndicator color="#fff" />
             ) : (
               <Text style={styles.buttonText}>
-                {activeTab === 'youtube' ? 'Extract Recipe from Video' : 'Parse Recipe'}
+                {activeTab === 'youtube'
+                  ? 'Extract Recipe from Video'
+                  : activeTab === 'website'
+                  ? 'Extract Recipe from Website'
+                  : 'Parse Recipe'}
               </Text>
             )}
           </TouchableOpacity>
