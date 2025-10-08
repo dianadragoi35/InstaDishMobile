@@ -50,6 +50,10 @@ InstaDish Mobile is a cross-platform mobile application built with React Native 
   - Recipe ingredient extraction
   - Cooking instruction parsing
   - Model: `gemini-2.5-flash`
+  - **Multi-source recipe import**:
+    - Text input - Paste recipe text directly
+    - YouTube video - Extract recipes from cooking videos
+    - Website URL - Scrape recipes from any website
 
 ## Development Tools
 
@@ -97,7 +101,9 @@ Constraints:
 - CORS enabled for mobile app
 - Endpoints:
   - `GET /health` - Health check
-  - `POST /api/recipes/parse` - AI recipe parsing
+  - `POST /api/recipes/parse` - AI recipe parsing from text
+  - `POST /api/recipes/parse-youtube` - Extract recipe from YouTube video
+  - `POST /api/recipes/parse-website` - Extract recipe from website URL
 
 **Supabase**
 - REST API (auto-generated)
@@ -134,9 +140,11 @@ InstaDishReact/
 │   │   └── grocery/   # Grocery list screens
 │   ├── services/      # API & business logic
 │   │   ├── supabase.ts           # Supabase client
-│   │   ├── recipeService.ts      # Recipe CRUD
+│   │   ├── recipeService.ts      # Recipe CRUD operations
 │   │   ├── groceryService.ts     # Grocery lists
-│   │   └── aiParsingService.ts   # AI parsing
+│   │   ├── aiParsingService.ts   # AI text parsing
+│   │   ├── youtubeService.ts     # YouTube recipe extraction
+│   │   └── websiteService.ts     # Website recipe extraction
 │   ├── types/         # TypeScript definitions
 │   └── utils/         # Helper functions
 ├── backend/           # Node.js/Express backend
