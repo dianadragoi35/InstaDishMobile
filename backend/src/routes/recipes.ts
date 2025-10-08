@@ -39,9 +39,6 @@ router.post('/parse', async (req, res) => {
       return res.status(500).json({ error: 'AI service is not configured' });
     }
 
-    console.log('GEMINI_API_KEY present:', !!process.env.GEMINI_API_KEY);
-    console.log('GEMINI_API_KEY length:', process.env.GEMINI_API_KEY?.length);
-
     // Initialize Gemini AI with the API key
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
