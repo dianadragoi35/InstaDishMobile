@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/dianadragoi/Sites/myapp/docs/**)",
+      "Read(//Users/dianadragoi/Sites/myapp/docs/architecture/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
