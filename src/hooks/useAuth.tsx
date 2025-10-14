@@ -10,6 +10,9 @@ interface AuthContextType {
   signUp: (email: string, password: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  updatePassword: (newPassword: string) => Promise<void>;
+  verifyRecoveryToken: (accessToken: string, refreshToken?: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -151,6 +154,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function resetPassword(email: string): Promise<void> {
+    try {
+      // Use a custom redirect URL that includes access_token and refresh_token as hash params
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: 'instadish://reset-password',
+      });
+
+      if (error) {
+        throw error;
+      }
+    } catch (error: any) {
+      console.error('Reset password error:', error);
+      throw new Error(error.message || 'Failed to send reset email');
+    }
+  }
+
+  async function updatePassword(newPassword: string): Promise<void> {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) {
+        throw error;
+      }
+    } catch (error: any) {
+      console.error('Update password error:', error);
+      throw new Error(error.message || 'Failed to update password');
+    }
+  }
+
+  async function verifyRecoveryToken(accessToken: string, refreshToken?: string): Promise<void> {
+    try {
+      // Establish a full session using the tokens from the recovery link
+      const { data, error } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken || '',
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      console.log('Recovery session established for user:', data.user?.email);
+      // Session will be set automatically via onAuthStateChange
+    } catch (error: any) {
+      console.error('Verify recovery token error:', error);
+      throw new Error(error.message || 'Failed to verify recovery token');
+    }
+  }
+
   const value: AuthContextType = {
     session,
     user,
@@ -158,6 +212,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signUp,
     signIn,
     signOut,
+    resetPassword,
+    updatePassword,
+    verifyRecoveryToken,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

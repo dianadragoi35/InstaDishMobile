@@ -19,7 +19,7 @@ import { useAuth } from '../../hooks/useAuth';
  * Allows sign up and login with email/password using Supabase Auth
  */
 export default function AuthScreen() {
-  const { signUp, signIn } = useAuth();
+  const { signUp, signIn, resetPassword } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -103,6 +103,47 @@ export default function AuthScreen() {
     setIsSignUp(!isSignUp);
     setErrors({});
     setConfirmPassword('');
+  }
+
+  async function handleForgotPassword(): Promise<void> {
+    // Validate email first
+    if (!email.trim()) {
+      Alert.alert('Email Required', 'Please enter your email address first');
+      return;
+    }
+
+    if (!validateEmail(email.trim())) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address');
+      return;
+    }
+
+    Alert.alert(
+      'Reset Password',
+      `Send password reset instructions to ${email}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Send',
+          onPress: async () => {
+            setIsLoading(true);
+            try {
+              await resetPassword(email.trim());
+              Alert.alert(
+                'Email Sent',
+                'Check your email for password reset instructions. The link will expire in 1 hour.'
+              );
+            } catch (error) {
+              Alert.alert(
+                'Error',
+                error instanceof Error ? error.message : 'Failed to send reset email'
+              );
+            } finally {
+              setIsLoading(false);
+            }
+          },
+        },
+      ]
+    );
   }
 
   return (
@@ -209,6 +250,16 @@ export default function AuthScreen() {
             )}
           </TouchableOpacity>
 
+          {!isSignUp && (
+            <TouchableOpacity
+              style={styles.forgotPasswordButton}
+              onPress={handleForgotPassword}
+              disabled={isLoading}
+            >
+              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+            </TouchableOpacity>
+          )}
+
           <TouchableOpacity
             style={styles.switchButton}
             onPress={handleSwitchMode}
@@ -309,6 +360,14 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  forgotPasswordButton: {
+    marginTop: 12,
+    alignItems: 'center',
+  },
+  forgotPasswordText: {
+    color: '#6B7280',
+    fontSize: 14,
   },
   switchButton: {
     marginTop: 24,
