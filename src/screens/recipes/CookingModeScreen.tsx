@@ -1,13 +1,10 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
   StatusBar,
-  PanResponder,
-  Animated,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -23,16 +20,13 @@ type CookingModeScreenNavigationProp = NativeStackNavigationProp<
   'CookingMode'
 >;
 
-const { width } = Dimensions.get('window');
-
 /**
  * Cooking Mode Screen
  * Full-screen immersive interface for step-by-step cooking instructions
  * Features:
- * - Swipe left/right to navigate between steps
  * - Tap left/right sides of screen to navigate
  * - Full-screen layout with hidden nav bars
- * - Smooth animations between steps
+ * - Large, readable step instructions
  */
 export default function CookingModeScreen() {
   const route = useRoute<CookingModeScreenRouteProp>();
@@ -40,7 +34,6 @@ export default function CookingModeScreen() {
   const { steps } = route.params;
 
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const translateX = useRef(new Animated.Value(0)).current;
 
   // Hide status bar for immersive experience
   React.useLayoutEffect(() => {
@@ -74,47 +67,6 @@ export default function CookingModeScreen() {
     navigation.goBack();
   }, [navigation]);
 
-  // Pan responder for swipe gestures
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (_, gestureState) => {
-        // Only activate pan responder if horizontal movement is significant
-        return Math.abs(gestureState.dx) > 10;
-      },
-      onPanResponderGrant: () => {
-        translateX.setOffset(0);
-      },
-      onPanResponderMove: (_, gestureState) => {
-        translateX.setValue(gestureState.dx);
-      },
-      onPanResponderRelease: (_, gestureState) => {
-        const threshold = width * 0.25; // 25% of screen width
-
-        if (gestureState.dx > threshold && currentStepIndex > 0) {
-          // Swipe right - go to previous step
-          goToPreviousStep();
-        } else if (gestureState.dx < -threshold && currentStepIndex < steps.length - 1) {
-          // Swipe left - go to next step
-          goToNextStep();
-        }
-
-        // Reset translation with spring animation
-        Animated.spring(translateX, {
-          toValue: 0,
-          useNativeDriver: true,
-        }).start();
-      },
-      onPanResponderTerminate: () => {
-        // Reset on termination
-        Animated.spring(translateX, {
-          toValue: 0,
-          useNativeDriver: true,
-        }).start();
-      },
-    })
-  ).current;
-
   /**
    * Handle tap on left side of screen (go to previous step)
    */
@@ -144,14 +96,8 @@ export default function CookingModeScreen() {
         <MaterialCommunityIcons name="close" size={28} color="#111827" />
       </TouchableOpacity>
 
-      {/* Main Content with Swipe Gesture */}
-      <View style={styles.contentContainer} {...panResponder.panHandlers}>
-        <Animated.View
-          style={[
-            styles.animatedContainer,
-            { transform: [{ translateX }] },
-          ]}
-        >
+      {/* Main Content */}
+      <View style={styles.contentContainer}>
           {/* Tap Zones */}
           <View style={styles.tapZonesContainer}>
             {/* Left Tap Zone */}
@@ -177,16 +123,11 @@ export default function CookingModeScreen() {
               activeOpacity={1}
             />
           </View>
-        </Animated.View>
 
         {/* Navigation Hint on First Load */}
         {currentStepIndex === 0 && (
           <View style={styles.hintContainer}>
-            <Text style={styles.hintText}>Swipe or tap sides to navigate</Text>
-            <View style={styles.hintArrows}>
-              <MaterialCommunityIcons name="gesture-swipe-left" size={24} color="#9CA3AF" />
-              <MaterialCommunityIcons name="gesture-swipe-right" size={24} color="#9CA3AF" />
-            </View>
+            <Text style={styles.hintText}>Tap left or right edge to navigate</Text>
           </View>
         )}
       </View>
@@ -219,9 +160,6 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
   },
-  animatedContainer: {
-    flex: 1,
-  },
   tapZonesContainer: {
     flex: 1,
     flexDirection: 'row',
@@ -234,6 +172,7 @@ const styles = StyleSheet.create({
     width: 80,
     justifyContent: 'center',
     alignItems: 'flex-start',
+    zIndex: 1,
   },
   stepCardContainer: {
     flex: 1,
@@ -249,6 +188,7 @@ const styles = StyleSheet.create({
     width: 80,
     justifyContent: 'center',
     alignItems: 'flex-end',
+    zIndex: 1,
   },
   hintContainer: {
     position: 'absolute',
@@ -260,10 +200,6 @@ const styles = StyleSheet.create({
   hintText: {
     fontSize: 14,
     color: '#9CA3AF',
-    marginBottom: 8,
-  },
-  hintArrows: {
-    flexDirection: 'row',
-    gap: 16,
+    textAlign: 'center',
   },
 });
