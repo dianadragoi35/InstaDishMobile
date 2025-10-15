@@ -1,4 +1,10 @@
 // Core Recipe types
+export interface RecipeStep {
+  instruction: string;
+  time?: string | null;
+  imageUrl?: string | null;
+}
+
 export interface Recipe {
   id: string;
   recipeName: string;
@@ -7,6 +13,7 @@ export interface Recipe {
   cookTime: string;
   servings: string;
   imageUrl?: string;
+  steps?: RecipeStep[] | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -57,6 +64,7 @@ export interface ParseRecipeResponse {
   prepTime: string;
   cookTime: string;
   servings: string;
+  steps?: RecipeStep[];
   ingredients: Array<{
     name: string;
     quantity: string;
@@ -71,6 +79,7 @@ export interface CreateRecipeRequest {
   cookTime?: string;
   servings?: string;
   imageUrl?: string;
+  steps?: RecipeStep[];
   ingredients: Array<{
     name: string;
     quantity: string;
@@ -85,6 +94,7 @@ export interface UpdateRecipeRequest {
   cookTime?: string;
   servings?: string;
   imageUrl?: string;
+  steps?: RecipeStep[];
   ingredients?: Array<{
     name: string;
     quantity: string;

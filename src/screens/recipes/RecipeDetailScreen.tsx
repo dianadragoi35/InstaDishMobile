@@ -270,11 +270,13 @@ export default function RecipeDetailScreen() {
     );
   }
 
-  // Parse instructions into steps
-  const instructionSteps = recipe.instructions
-    .split('\n')
-    .filter((step) => step.trim())
-    .map((step) => step.trim());
+  // Use steps array if available, otherwise parse instructions text
+  const displaySteps = recipe.steps && recipe.steps.length > 0
+    ? recipe.steps
+    : recipe.instructions
+        .split('\n')
+        .filter((step) => step.trim())
+        .map((step) => ({ instruction: step.trim(), time: null, imageUrl: null }));
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
@@ -373,18 +375,26 @@ export default function RecipeDetailScreen() {
           <Text style={styles.sectionTitle}>Instructions</Text>
         </View>
 
-        {instructionSteps.length === 0 ? (
+        {displaySteps.length === 0 ? (
           <View style={styles.emptySection}>
             <Text style={styles.emptySectionText}>No instructions added</Text>
           </View>
         ) : (
           <View style={styles.instructionsList}>
-            {instructionSteps.map((step, index) => (
+            {displaySteps.map((step, index) => (
               <View key={index} style={styles.instructionItem}>
                 <View style={styles.stepNumberContainer}>
                   <Text style={styles.stepNumber}>{index + 1}</Text>
                 </View>
-                <Text style={styles.instructionText}>{step}</Text>
+                <View style={styles.instructionContent}>
+                  <Text style={styles.instructionText}>{step.instruction}</Text>
+                  {step.time && (
+                    <View style={styles.stepTimeContainer}>
+                      <MaterialCommunityIcons name="clock-outline" size={16} color="#D97706" />
+                      <Text style={styles.stepTimeText}>{step.time} min</Text>
+                    </View>
+                  )}
+                </View>
               </View>
             ))}
           </View>
@@ -584,11 +594,25 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#D97706',
   },
-  instructionText: {
+  instructionContent: {
     flex: 1,
+    paddingTop: 4,
+  },
+  instructionText: {
     fontSize: 16,
     lineHeight: 24,
     color: '#111827',
-    paddingTop: 4,
+  },
+  stepTimeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 6,
+    paddingLeft: 8,
+  },
+  stepTimeText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#D97706',
   },
 });

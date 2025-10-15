@@ -41,6 +41,7 @@ export const recipeService = {
       cookTime: recipe.cook_time || '',
       servings: recipe.servings || '',
       imageUrl: recipe.image_url,
+      steps: recipe.steps || null,
       createdAt: recipe.created_at,
       updatedAt: recipe.updated_at,
     }));
@@ -80,6 +81,7 @@ export const recipeService = {
       cookTime: data.cook_time || '',
       servings: data.servings || '',
       imageUrl: data.image_url,
+      steps: data.steps || null,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
     };
@@ -169,6 +171,7 @@ export const recipeService = {
         cook_time: truncate(request.cookTime, 50),
         servings: truncate(request.servings, 50),
         image_url: request.imageUrl?.trim() || null,
+        steps: request.steps || null,
       })
       .select()
       .single();
@@ -286,7 +289,8 @@ export const recipeService = {
       updates.prepTime !== undefined ||
       updates.cookTime !== undefined ||
       updates.servings !== undefined ||
-      updates.imageUrl !== undefined;
+      updates.imageUrl !== undefined ||
+      updates.steps !== undefined;
 
     if (hasMetadataUpdates) {
       const updateData: any = {};
@@ -308,6 +312,9 @@ export const recipeService = {
       }
       if (updates.imageUrl !== undefined) {
         updateData.image_url = updates.imageUrl?.trim() || null;
+      }
+      if (updates.steps !== undefined) {
+        updateData.steps = updates.steps || null;
       }
 
       const { error } = await supabase
@@ -463,6 +470,7 @@ export const recipeService = {
       cookTime: recipe.cook_time || '',
       servings: recipe.servings || '',
       imageUrl: recipe.image_url,
+      steps: recipe.steps || null,
       createdAt: recipe.created_at,
       updatedAt: recipe.updated_at,
     }));
