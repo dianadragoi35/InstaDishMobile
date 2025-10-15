@@ -17,6 +17,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { recipeService } from '../../services/recipeService';
 import { useRecipes } from '../../hooks/useRecipes';
 import { RecipesStackParamList } from '../../navigation/AppNavigator';
+import { RecipeStep } from '../../types';
 
 type EditRecipeScreenRouteProp = RouteProp<RecipesStackParamList, 'EditRecipe'>;
 type EditRecipeScreenNavigationProp = NativeStackNavigationProp<
@@ -42,6 +43,7 @@ export default function EditRecipeScreen() {
   const [cookTime, setCookTime] = useState('');
   const [servings, setServings] = useState('');
   const [ingredients, setIngredients] = useState<Array<{ name: string; quantity: string; notes?: string }>>([]);
+  const [steps, setSteps] = useState<RecipeStep[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
   // Fetch recipe data
@@ -71,6 +73,7 @@ export default function EditRecipeScreen() {
       setPrepTime(recipe.prepTime || '');
       setCookTime(recipe.cookTime || '');
       setServings(recipe.servings || '');
+      setSteps(recipe.steps || []);
     }
   }, [recipe]);
 
@@ -151,6 +154,7 @@ export default function EditRecipeScreen() {
           cookTime: cookTime.trim() || undefined,
           servings: servings.trim() || undefined,
           ingredients,
+          steps: steps.length > 0 ? steps : undefined,
         },
       });
 
@@ -201,6 +205,34 @@ export default function EditRecipeScreen() {
     const updated = [...ingredients];
     updated[index] = { ...updated[index], [field]: value };
     setIngredients(updated);
+  };
+
+  /**
+   * Handle adding a new step
+   */
+  const handleAddStep = () => {
+    setSteps([...steps, { instruction: '', time: null, imageUrl: null }]);
+  };
+
+  /**
+   * Handle removing a step
+   */
+  const handleRemoveStep = (index: number) => {
+    const updated = steps.filter((_, i) => i !== index);
+    setSteps(updated);
+  };
+
+  /**
+   * Handle updating a step field
+   */
+  const handleUpdateStep = (
+    index: number,
+    field: 'instruction' | 'time',
+    value: string
+  ) => {
+    const updated = [...steps];
+    updated[index] = { ...updated[index], [field]: value || null };
+    setSteps(updated);
   };
 
   // Loading state
@@ -314,6 +346,54 @@ export default function EditRecipeScreen() {
           placeholder="e.g., 4 servings"
         />
       </View>
+
+      {/* Steps Section (if available) */}
+      {steps.length > 0 && (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.label}>Steps ({steps.length})</Text>
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={handleAddStep}
+            >
+              <MaterialCommunityIcons name="plus-circle" size={24} color="#D97706" />
+              <Text style={styles.addButtonText}>Add</Text>
+            </TouchableOpacity>
+          </View>
+
+          {steps.map((step, index) => (
+            <View key={index} style={styles.stepRow}>
+              <View style={styles.stepNumber}>
+                <Text style={styles.stepNumberText}>{index + 1}</Text>
+              </View>
+              <View style={styles.stepInputs}>
+                <TextInput
+                  style={[styles.textArea, styles.stepInstructionInput]}
+                  multiline
+                  numberOfLines={3}
+                  value={step.instruction}
+                  onChangeText={(value) => handleUpdateStep(index, 'instruction', value)}
+                  placeholder="Step instruction"
+                  textAlignVertical="top"
+                />
+                <TextInput
+                  style={[styles.input, styles.stepTimeInput]}
+                  value={step.time || ''}
+                  onChangeText={(value) => handleUpdateStep(index, 'time', value)}
+                  placeholder="Time (minutes)"
+                  keyboardType="numeric"
+                />
+              </View>
+              <TouchableOpacity
+                style={styles.removeButton}
+                onPress={() => handleRemoveStep(index)}
+              >
+                <MaterialCommunityIcons name="close-circle" size={24} color="#EF4444" />
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+      )}
 
       {/* Ingredients Section */}
       <View style={styles.section}>
@@ -554,6 +634,37 @@ const styles = StyleSheet.create({
   removeButton: {
     padding: 4,
     marginTop: 4,
+  },
+  stepRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+    gap: 8,
+  },
+  stepNumber: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#D97706',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  stepNumberText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  stepInputs: {
+    flex: 1,
+    gap: 8,
+  },
+  stepInstructionInput: {
+    minHeight: 80,
+    marginBottom: 0,
+  },
+  stepTimeInput: {
+    marginBottom: 0,
   },
   button: {
     paddingVertical: 14,

@@ -185,6 +185,7 @@ export default function AddRecipeScreen() {
         prepTime: parsedRecipe.prepTime,
         cookTime: parsedRecipe.cookTime,
         servings: parsedRecipe.servings,
+        steps: parsedRecipe.steps,
       });
 
       Alert.alert('Success', 'Recipe saved successfully!', [

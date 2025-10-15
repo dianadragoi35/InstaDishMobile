@@ -8,6 +8,12 @@ export interface ParseRecipeRequest {
   language?: string;
 }
 
+export interface RecipeStep {
+  instruction: string;
+  time?: string | null;
+  imageUrl?: string | null;
+}
+
 export interface ParseRecipeResponse {
   recipeName: string;
   ingredients: Array<{
@@ -16,6 +22,7 @@ export interface ParseRecipeResponse {
     notes?: string;
   }>;
   instructions: string;
+  steps?: RecipeStep[];
   prepTime?: string;
   cookTime?: string;
   servings?: string;
@@ -61,6 +68,13 @@ Return ONLY valid JSON with this exact structure (no markdown, no code blocks, n
     }
   ],
   "instructions": "step by step cooking instructions as a single text",
+  "steps": [
+    {
+      "instruction": "individual step instruction",
+      "time": "time in minutes as string (e.g., '5') or null if no specific time",
+      "imageUrl": null
+    }
+  ],
   "prepTime": "preparation time (e.g., '15 min')",
   "cookTime": "cooking time (e.g., '30 min')",
   "servings": "number of servings (e.g., '4 servings')"
@@ -72,13 +86,18 @@ Important rules:
 - If the recipe text only contains a method/instructions without ingredients list, try to extract ingredients mentioned in the method
 - For ingredients mentioned in instructions but without quantities, use "to taste" or "as needed" for quantity
 - If measurements or preparation notes (like 'diced', 'chopped') are mentioned, put them in the notes field
+- IMPORTANT: For ingredients without notes, OMIT the notes field entirely - do not use null
 - Combine all instructions into a single paragraph with clear numbered steps
+- Break down the instructions into individual steps in the "steps" array - each step should be one discrete action
+- For each step, extract any time mentioned (e.g., "bake for 30 minutes" → time: "30", "let rest for 5 minutes" → time: "5")
+- If a step doesn't mention a specific time, set time to null
+- Always set imageUrl to null in steps (images will be added later by users if needed)
 - Extract timing information if mentioned, otherwise provide reasonable estimates based on the recipe complexity
 - Extract servings if mentioned, otherwise provide a reasonable estimate
 - If any optional field is not found in the text, you can omit it or use an empty string
 - All text should be in ${language}
 - Return ONLY valid, complete JSON - ensure all brackets and quotes are closed properly
-- Do not truncate the response - include all ingredients and full instructions
+- Do not truncate the response - include all ingredients, full instructions, and all steps
 
 Recipe text to parse:
 ${recipeText}`;
@@ -90,7 +109,7 @@ ${recipeText}`;
         temperature: 0.2,
         topK: 40,
         topP: 0.95,
-        maxOutputTokens: 4096, // Increased for longer recipes
+        maxOutputTokens: 8192, // Increased for longer recipes with many steps
       },
     });
 
@@ -155,13 +174,17 @@ ${recipeText}`;
       return res.status(500).json({ error: 'AI response missing ingredients' });
     }
 
-    // Ensure all ingredients have required fields
+    // Ensure all ingredients have required fields and normalize notes
     for (const ingredient of parsedRecipe.ingredients) {
       if (!ingredient.name || !ingredient.quantity) {
         return res.status(500).json({
           error: 'Invalid ingredient format in AI response',
           ingredient
         });
+      }
+      // Normalize null notes to undefined (optional field)
+      if (ingredient.notes === null) {
+        delete ingredient.notes;
       }
     }
 
@@ -218,6 +241,13 @@ Return ONLY valid JSON with this exact structure (no markdown, no code blocks, n
     }
   ],
   "instructions": "step by step cooking instructions as a single text",
+  "steps": [
+    {
+      "instruction": "individual step instruction",
+      "time": "time in minutes as string (e.g., '5') or null if no specific time",
+      "imageUrl": null
+    }
+  ],
   "prepTime": "preparation time (e.g., '15 min')",
   "cookTime": "cooking time (e.g., '30 min')",
   "servings": "number of servings (e.g., '4 servings')"
@@ -230,7 +260,12 @@ ${cuisineText}
 - You can add common pantry staples (salt, pepper, oil, etc.) if needed to make a complete recipe
 - List all ingredients with realistic quantities and measurements
 - Include preparation notes where helpful (e.g., 'chopped', 'minced', 'at room temperature')
+- IMPORTANT: For ingredients without notes, OMIT the notes field entirely - do not use null
 - Write clear, numbered step-by-step instructions in a single paragraph format
+- Break down the instructions into individual steps in the "steps" array - each step should be one discrete action
+- For each step, include any time mentioned (e.g., "bake for 30 minutes" → time: "30", "simmer for 10 minutes" → time: "10")
+- If a step doesn't have a specific time, set time to null
+- Always set imageUrl to null in steps (images will be added later by users if needed)
 - Provide realistic cooking and preparation times
 - Specify the number of servings the recipe makes
 - All text should be in ${language}
@@ -246,7 +281,7 @@ Generate the recipe now.`;
         temperature: 0.7, // Higher creativity for generation vs parsing
         topK: 40,
         topP: 0.95,
-        maxOutputTokens: 4096,
+        maxOutputTokens: 8192, // Increased for longer recipes with many steps
       },
     });
 
@@ -311,13 +346,17 @@ Generate the recipe now.`;
       return res.status(500).json({ error: 'AI response missing ingredients' });
     }
 
-    // Ensure all ingredients have required fields
+    // Ensure all ingredients have required fields and normalize notes
     for (const ingredient of generatedRecipe.ingredients) {
       if (!ingredient.name || !ingredient.quantity) {
         return res.status(500).json({
           error: 'Invalid ingredient format in AI response',
           ingredient
         });
+      }
+      // Normalize null notes to undefined (optional field)
+      if (ingredient.notes === null) {
+        delete ingredient.notes;
       }
     }
 
