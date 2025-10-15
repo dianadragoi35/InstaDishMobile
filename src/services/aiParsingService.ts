@@ -102,7 +102,7 @@ export const aiParsingService = {
 
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
-        const response = await fetch(`${API_BASE_URL}/recipes/parse`, {
+        const response = await fetch(`${API_BASE_URL}/api/recipes/parse`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

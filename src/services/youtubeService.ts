@@ -68,7 +68,7 @@ export const fetchYouTubeTranscript = async (youtubeUrl: string): Promise<Transc
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/youtube/transcript`, {
+    const response = await fetch(`${API_BASE_URL}/api/youtube/transcript`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
