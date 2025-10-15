@@ -108,6 +108,19 @@ export default function RecipeDetailScreen() {
   };
 
   /**
+   * Handle start cooking mode
+   * Navigate to CookingModeScreen with recipe steps
+   */
+  const handleStartCooking = () => {
+    if (!recipe || displaySteps.length === 0) {
+      Alert.alert('No Instructions', 'This recipe has no cooking instructions yet.');
+      return;
+    }
+
+    navigation.navigate('CookingMode', { steps: displaySteps });
+  };
+
+  /**
    * Handle share recipe using native share sheet
    */
   const handleShare = async () => {
@@ -371,8 +384,19 @@ export default function RecipeDetailScreen() {
       {/* Instructions Section */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <MaterialCommunityIcons name="format-list-numbered" size={24} color="#D97706" />
-          <Text style={styles.sectionTitle}>Instructions</Text>
+          <View style={styles.sectionHeaderLeft}>
+            <MaterialCommunityIcons name="format-list-numbered" size={24} color="#D97706" />
+            <Text style={styles.sectionTitle}>Instructions</Text>
+          </View>
+          {displaySteps.length > 0 && (
+            <TouchableOpacity
+              style={styles.startCookingButton}
+              onPress={handleStartCooking}
+            >
+              <MaterialCommunityIcons name="chef-hat" size={20} color="#fff" />
+              <Text style={styles.startCookingText}>Start Cooking</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {displaySteps.length === 0 ? (
@@ -527,6 +551,25 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#D97706',
+  },
+  startCookingButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#D97706',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  startCookingText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#fff',
   },
   emptySection: {
     paddingVertical: 20,

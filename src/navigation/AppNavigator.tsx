@@ -12,6 +12,7 @@ import RecipeDetailScreen from '../screens/recipes/RecipeDetailScreen';
 import AddRecipeScreen from '../screens/recipes/AddRecipeScreen';
 import EditRecipeScreen from '../screens/recipes/EditRecipeScreen';
 import GenerateRecipeScreen from '../screens/recipes/GenerateRecipeScreen';
+import CookingModeScreen from '../screens/recipes/CookingModeScreen';
 import GroceryListsScreen from '../screens/grocery/GroceryListsScreen';
 import GroceryListDetailScreen from '../screens/grocery/GroceryListDetailScreen';
 import ShoppingListScreen from '../screens/grocery/ShoppingListScreen';
@@ -23,6 +24,7 @@ export type RecipesStackParamList = {
   AddRecipe: undefined;
   EditRecipe: { recipeId: string };
   GenerateRecipe: undefined;
+  CookingMode: { steps: Array<{ instruction: string; time?: string | null; imageUrl?: string | null }> };
 };
 
 export type GroceryStackParamList = {
@@ -106,6 +108,15 @@ function RecipesNavigator() {
         component={EditRecipeScreen}
         options={{ title: 'Edit Recipe' }}
       />
+      <RecipesStack.Screen
+        name="CookingMode"
+        component={CookingModeScreen}
+        options={{
+          presentation: 'fullScreenModal',
+          headerShown: false,
+          animation: 'slide_from_bottom',
+        }}
+      />
     </RecipesStack.Navigator>
   );
 }
@@ -136,6 +147,15 @@ function AIGenerateNavigator() {
         name="EditRecipe"
         component={EditRecipeScreen}
         options={{ title: 'Edit Recipe' }}
+      />
+      <RecipesStack.Screen
+        name="CookingMode"
+        component={CookingModeScreen}
+        options={{
+          presentation: 'fullScreenModal',
+          headerShown: false,
+          animation: 'slide_from_bottom',
+        }}
       />
     </RecipesStack.Navigator>
   );
