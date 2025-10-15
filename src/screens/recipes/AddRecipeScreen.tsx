@@ -236,7 +236,7 @@ export default function AddRecipeScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      {!parsedRecipe ? (
+      {!parsedRecipe && !isParsing && (
         <>
           {/* Recipe Input Section */}
           <Text style={styles.title}>Add New Recipe</Text>
@@ -371,7 +371,25 @@ export default function AddRecipeScreen() {
             )}
           </TouchableOpacity>
         </>
-      ) : (
+      )}
+
+      {isParsing && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#D97706" />
+          <Text style={styles.loadingText}>
+            {activeTab === 'youtube'
+              ? 'Extracting recipe from video...'
+              : activeTab === 'website'
+              ? 'Extracting recipe from website...'
+              : 'Parsing recipe...'}
+          </Text>
+          <Text style={styles.loadingSubtext}>
+            This may take a few moments
+          </Text>
+        </View>
+      )}
+
+      {parsedRecipe && !isParsing && (
         <>
           {/* Parsed Recipe Preview & Edit Section */}
           <Text style={styles.title}>Review Parsed Recipe</Text>
@@ -618,5 +636,27 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: 'row',
     marginTop: 8,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+    minHeight: 400,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    marginTop: 20,
+  },
+  loadingText: {
+    marginTop: 24,
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#111827',
+  },
+  loadingSubtext: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
   },
 });

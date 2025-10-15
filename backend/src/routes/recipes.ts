@@ -21,6 +21,12 @@ export interface ParseRecipeResponse {
   servings?: string;
 }
 
+export interface GenerateRecipeRequest {
+  ingredients: string;
+  cuisine?: string;
+  language?: string;
+}
+
 /**
  * POST /api/recipes/parse
  * Parse recipe text using Google Gemini AI
@@ -173,6 +179,162 @@ ${recipeText}`;
 
     return res.status(500).json({
       error: `Failed to parse recipe: ${errorMessage}`
+    });
+  }
+});
+
+/**
+ * POST /api/recipes/generate
+ * Generate a new recipe from ingredients using Google Gemini AI
+ */
+router.post('/generate', async (req, res) => {
+  try {
+    const { ingredients, cuisine = '', language = 'English' }: GenerateRecipeRequest = req.body;
+
+    // Validate input
+    if (!ingredients || !ingredients.trim()) {
+      return res.status(400).json({ error: 'Ingredients are required' });
+    }
+
+    if (!process.env.GEMINI_API_KEY) {
+      console.error('GEMINI_API_KEY is not configured');
+      return res.status(500).json({ error: 'AI service is not configured' });
+    }
+
+    // Initialize Gemini AI with the API key
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+
+    const cuisineText = cuisine ? `Preferred cuisine: ${cuisine}.` : '';
+    const prompt = `You are a creative recipe generator. Generate a complete, delicious recipe using the following ingredients.
+Return ONLY valid JSON with this exact structure (no markdown, no code blocks, no explanations):
+
+{
+  "recipeName": "string",
+  "ingredients": [
+    {
+      "name": "ingredient name",
+      "quantity": "amount with unit",
+      "notes": "optional notes like 'diced' or 'room temperature'"
+    }
+  ],
+  "instructions": "step by step cooking instructions as a single text",
+  "prepTime": "preparation time (e.g., '15 min')",
+  "cookTime": "cooking time (e.g., '30 min')",
+  "servings": "number of servings (e.g., '4 servings')"
+}
+
+Important rules:
+- Create a recipe name that is appetizing and descriptive
+- Main ingredients to use: ${ingredients}
+${cuisineText}
+- You can add common pantry staples (salt, pepper, oil, etc.) if needed to make a complete recipe
+- List all ingredients with realistic quantities and measurements
+- Include preparation notes where helpful (e.g., 'chopped', 'minced', 'at room temperature')
+- Write clear, numbered step-by-step instructions in a single paragraph format
+- Provide realistic cooking and preparation times
+- Specify the number of servings the recipe makes
+- All text should be in ${language}
+- Return ONLY valid, complete JSON - ensure all brackets and quotes are closed properly
+- Make the recipe practical and achievable for home cooks
+
+Generate the recipe now.`;
+
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.5-flash',
+      generationConfig: {
+        responseMimeType: 'application/json',
+        temperature: 0.7, // Higher creativity for generation vs parsing
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 4096,
+      },
+    });
+
+    const result = await model.generateContent(prompt);
+    let text = result.response.text().trim();
+
+    // Clean the response - remove markdown code blocks if present
+    text = text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
+
+    // Parse the JSON response
+    let generatedRecipe: ParseRecipeResponse;
+    try {
+      generatedRecipe = JSON.parse(text);
+    } catch (parseError) {
+      console.error('Failed to parse Gemini response as JSON:', text.substring(0, 500));
+
+      // Try to fix common JSON issues
+      let fixedText = text;
+
+      // If response is truncated, try to close it
+      if (!text.trim().endsWith('}')) {
+        const openBraces = (text.match(/{/g) || []).length;
+        const closeBraces = (text.match(/}/g) || []).length;
+        const openBrackets = (text.match(/\[/g) || []).length;
+        const closeBrackets = (text.match(/\]/g) || []).length;
+
+        // Add missing closing brackets/braces
+        for (let i = 0; i < openBrackets - closeBrackets; i++) {
+          fixedText += ']';
+        }
+        for (let i = 0; i < openBraces - closeBraces; i++) {
+          fixedText += '}';
+        }
+
+        try {
+          generatedRecipe = JSON.parse(fixedText);
+          console.log('Successfully fixed truncated JSON response');
+        } catch {
+          return res.status(500).json({
+            error: 'AI returned incomplete or invalid response format',
+            details: text.substring(0, 300),
+            suggestion: 'Try with fewer ingredients or simpler cuisine preference'
+          });
+        }
+      } else {
+        return res.status(500).json({
+          error: 'AI returned invalid response format',
+          details: text.substring(0, 300)
+        });
+      }
+    }
+
+    // Validate required fields
+    if (!generatedRecipe.recipeName || !generatedRecipe.ingredients || !generatedRecipe.instructions) {
+      return res.status(500).json({
+        error: 'AI response missing required fields',
+        received: generatedRecipe
+      });
+    }
+
+    if (generatedRecipe.ingredients.length === 0) {
+      return res.status(500).json({ error: 'AI response missing ingredients' });
+    }
+
+    // Ensure all ingredients have required fields
+    for (const ingredient of generatedRecipe.ingredients) {
+      if (!ingredient.name || !ingredient.quantity) {
+        return res.status(500).json({
+          error: 'Invalid ingredient format in AI response',
+          ingredient
+        });
+      }
+    }
+
+    // Set defaults for optional fields if missing
+    generatedRecipe.prepTime = generatedRecipe.prepTime || '';
+    generatedRecipe.cookTime = generatedRecipe.cookTime || '';
+    generatedRecipe.servings = generatedRecipe.servings || '';
+
+    return res.json(generatedRecipe);
+
+  } catch (error) {
+    console.error('Recipe generation API error:', error);
+
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+
+    return res.status(500).json({
+      error: `Failed to generate recipe: ${errorMessage}`
     });
   }
 });

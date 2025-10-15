@@ -40,7 +40,7 @@ export const fetchWebsiteContent = async (websiteUrl: string): Promise<WebsiteCo
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/website/content`, {
+    const response = await fetch(`${API_BASE_URL}/api/website/content`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
