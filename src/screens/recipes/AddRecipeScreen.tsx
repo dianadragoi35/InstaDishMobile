@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Clipboard,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useNavigation } from '@react-navigation/native';
@@ -39,6 +40,42 @@ export default function AddRecipeScreen() {
 
   // Saving state
   const [isSaving, setIsSaving] = useState(false);
+
+  // Handle paste from clipboard for website URL
+  const handlePasteWebsiteUrl = async () => {
+    try {
+      const text = await Clipboard.getString();
+      if (text) {
+        setWebsiteUrl(text);
+      }
+    } catch (error) {
+      console.error('Failed to paste from clipboard:', error);
+    }
+  };
+
+  // Handle paste from clipboard for YouTube URL
+  const handlePasteYoutubeUrl = async () => {
+    try {
+      const text = await Clipboard.getString();
+      if (text) {
+        setYoutubeUrl(text);
+      }
+    } catch (error) {
+      console.error('Failed to paste from clipboard:', error);
+    }
+  };
+
+  // Handle paste from clipboard for recipe text
+  const handlePasteRecipeText = async () => {
+    try {
+      const text = await Clipboard.getString();
+      if (text) {
+        setRecipeText(text);
+      }
+    } catch (error) {
+      console.error('Failed to paste from clipboard:', error);
+    }
+  };
 
   // Handle recipe text parsing
   const handleParseText = async () => {
@@ -178,6 +215,14 @@ export default function AddRecipeScreen() {
     try {
       const normalizedInstructions = normalizeInstructions(parsedRecipe.instructions);
 
+      // Determine source URL based on active tab
+      let sourceUrl: string | undefined;
+      if (activeTab === 'website' && websiteUrl.trim()) {
+        sourceUrl = websiteUrl.trim();
+      } else if (activeTab === 'youtube' && youtubeUrl.trim()) {
+        sourceUrl = youtubeUrl.trim();
+      }
+
       await createRecipeAsync({
         recipeName: parsedRecipe.recipeName,
         ingredients: parsedRecipe.ingredients,
@@ -186,6 +231,7 @@ export default function AddRecipeScreen() {
         cookTime: parsedRecipe.cookTime,
         servings: parsedRecipe.servings,
         steps: parsedRecipe.steps,
+        sourceUrl,
       });
 
       Alert.alert('Success', 'Recipe saved successfully!', [
@@ -290,15 +336,24 @@ export default function AddRecipeScreen() {
           {activeTab === 'website' && (
             <View style={styles.section}>
               <Text style={styles.label}>Website URL</Text>
-              <TextInput
-                style={styles.input}
-                value={websiteUrl}
-                onChangeText={setWebsiteUrl}
-                placeholder="https://www.example.com/recipe..."
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="url"
-              />
+              <View style={styles.inputWithIcon}>
+                <TextInput
+                  style={styles.inputWithButton}
+                  value={websiteUrl}
+                  onChangeText={setWebsiteUrl}
+                  placeholder="https://www.example.com/recipe..."
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="url"
+                />
+                <TouchableOpacity
+                  style={styles.pasteButton}
+                  onPress={handlePasteWebsiteUrl}
+                  activeOpacity={0.7}
+                >
+                  <MaterialIcons name="content-paste" size={20} color="#D97706" />
+                </TouchableOpacity>
+              </View>
               <Text style={styles.hint}>
                 Paste a link to any recipe website or blog post
               </Text>
@@ -308,15 +363,24 @@ export default function AddRecipeScreen() {
           {activeTab === 'youtube' && (
             <View style={styles.section}>
               <Text style={styles.label}>YouTube Video URL</Text>
-              <TextInput
-                style={styles.input}
-                value={youtubeUrl}
-                onChangeText={setYoutubeUrl}
-                placeholder="https://www.youtube.com/watch?v=..."
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="url"
-              />
+              <View style={styles.inputWithIcon}>
+                <TextInput
+                  style={styles.inputWithButton}
+                  value={youtubeUrl}
+                  onChangeText={setYoutubeUrl}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="url"
+                />
+                <TouchableOpacity
+                  style={styles.pasteButton}
+                  onPress={handlePasteYoutubeUrl}
+                  activeOpacity={0.7}
+                >
+                  <MaterialIcons name="content-paste" size={20} color="#D97706" />
+                </TouchableOpacity>
+              </View>
               <Text style={styles.hint}>
                 Paste a link to a cooking video with captions/transcripts enabled
               </Text>
@@ -325,7 +389,17 @@ export default function AddRecipeScreen() {
 
           {activeTab === 'text' && (
             <View style={styles.section}>
-              <Text style={styles.label}>Recipe Text</Text>
+              <View style={styles.labelRow}>
+                <Text style={styles.label}>Recipe Text</Text>
+                <TouchableOpacity
+                  style={styles.pasteButtonTop}
+                  onPress={handlePasteRecipeText}
+                  activeOpacity={0.7}
+                >
+                  <MaterialIcons name="content-paste" size={18} color="#D97706" />
+                  <Text style={styles.pasteButtonText}>Paste</Text>
+                </TouchableOpacity>
+              </View>
               <TextInput
                 style={styles.textArea}
                 multiline
@@ -557,11 +631,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginBottom: 20,
   },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
   label: {
     fontSize: 14,
     fontWeight: '600',
     color: '#374151',
-    marginBottom: 8,
   },
   input: {
     borderWidth: 1,
@@ -570,6 +649,46 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 16,
     backgroundColor: '#fff',
+  },
+  inputWithIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  inputWithButton: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    padding: 12,
+    paddingRight: 48,
+    fontSize: 16,
+    backgroundColor: '#fff',
+  },
+  pasteButton: {
+    position: 'absolute',
+    right: 8,
+    padding: 8,
+    backgroundColor: '#FEF3C7',
+    borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pasteButtonTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: '#FEF3C7',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+  },
+  pasteButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#D97706',
   },
   textArea: {
     borderWidth: 1,

@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   Share,
+  Linking,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -329,6 +330,22 @@ export default function RecipeDetailScreen() {
             )}
           </View>
         )}
+
+        {/* Source URL */}
+        {recipe.sourceUrl && (
+          <TouchableOpacity
+            style={styles.sourceContainer}
+            onPress={() => Linking.openURL(recipe.sourceUrl!)}
+            activeOpacity={0.7}
+          >
+            <MaterialCommunityIcons name="link-variant" size={20} color="#2563EB" />
+            <Text style={styles.sourceLabel}>Source:</Text>
+            <Text style={styles.sourceUrl} numberOfLines={1} ellipsizeMode="middle">
+              {recipe.sourceUrl}
+            </Text>
+            <MaterialCommunityIcons name="open-in-new" size={16} color="#2563EB" />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Ingredients Section */}
@@ -514,6 +531,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#111827',
+  },
+  sourceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    gap: 8,
+  },
+  sourceLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  sourceUrl: {
+    flex: 1,
+    fontSize: 14,
+    color: '#2563EB',
+    textDecorationLine: 'underline',
   },
   section: {
     backgroundColor: '#fff',
