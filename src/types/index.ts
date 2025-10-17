@@ -13,6 +13,7 @@ export interface Recipe {
   cookTime: string;
   servings: string;
   imageUrl?: string;
+  sourceUrl?: string;
   steps?: RecipeStep[] | null;
   createdAt: string;
   updatedAt: string;
@@ -79,6 +80,7 @@ export interface CreateRecipeRequest {
   cookTime?: string;
   servings?: string;
   imageUrl?: string;
+  sourceUrl?: string;
   steps?: RecipeStep[];
   ingredients: Array<{
     name: string;
@@ -94,6 +96,7 @@ export interface UpdateRecipeRequest {
   cookTime?: string;
   servings?: string;
   imageUrl?: string;
+  sourceUrl?: string;
   steps?: RecipeStep[];
   ingredients?: Array<{
     name: string;

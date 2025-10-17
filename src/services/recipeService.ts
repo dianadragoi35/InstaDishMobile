@@ -41,6 +41,7 @@ export const recipeService = {
       cookTime: recipe.cook_time || '',
       servings: recipe.servings || '',
       imageUrl: recipe.image_url,
+      sourceUrl: recipe.source_url,
       steps: recipe.steps || null,
       createdAt: recipe.created_at,
       updatedAt: recipe.updated_at,
@@ -81,6 +82,7 @@ export const recipeService = {
       cookTime: data.cook_time || '',
       servings: data.servings || '',
       imageUrl: data.image_url,
+      sourceUrl: data.source_url,
       steps: data.steps || null,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
@@ -171,6 +173,7 @@ export const recipeService = {
         cook_time: truncate(request.cookTime, 50),
         servings: truncate(request.servings, 50),
         image_url: request.imageUrl?.trim() || null,
+        source_url: request.sourceUrl?.trim() || null,
         steps: request.steps || null,
       })
       .select()
@@ -290,6 +293,7 @@ export const recipeService = {
       updates.cookTime !== undefined ||
       updates.servings !== undefined ||
       updates.imageUrl !== undefined ||
+      updates.sourceUrl !== undefined ||
       updates.steps !== undefined;
 
     if (hasMetadataUpdates) {
@@ -312,6 +316,9 @@ export const recipeService = {
       }
       if (updates.imageUrl !== undefined) {
         updateData.image_url = updates.imageUrl?.trim() || null;
+      }
+      if (updates.sourceUrl !== undefined) {
+        updateData.source_url = updates.sourceUrl?.trim() || null;
       }
       if (updates.steps !== undefined) {
         updateData.steps = updates.steps || null;
@@ -470,6 +477,7 @@ export const recipeService = {
       cookTime: recipe.cook_time || '',
       servings: recipe.servings || '',
       imageUrl: recipe.image_url,
+      sourceUrl: recipe.source_url,
       steps: recipe.steps || null,
       createdAt: recipe.created_at,
       updatedAt: recipe.updated_at,
