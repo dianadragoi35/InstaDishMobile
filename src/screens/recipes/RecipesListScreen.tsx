@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   TextInput,
   RefreshControl,
+  Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -126,6 +127,19 @@ export default function RecipesListScreen() {
               style={styles.recipeCard}
               onPress={() => handleRecipePress(item.id)}
             >
+              {/* Recipe Image or Fallback Icon */}
+              {item.imageUrl ? (
+                <Image
+                  source={{ uri: item.imageUrl }}
+                  style={styles.recipeImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View style={styles.recipeImagePlaceholder}>
+                  <MaterialCommunityIcons name="food" size={32} color="#D1D5DB" />
+                </View>
+              )}
+
               <View style={styles.recipeContent}>
                 <Text style={styles.recipeName} numberOfLines={2}>
                   {item.recipeName}
@@ -249,13 +263,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 16,
+    padding: 12,
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 2,
+  },
+  recipeImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    marginRight: 12,
+  },
+  recipeImagePlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    marginRight: 12,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   recipeContent: {
     flex: 1,

@@ -6,6 +6,7 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.2.2
 export interface WebsiteContentResult {
   success: boolean;
   content?: string;
+  imageUrl?: string;
   error?: string;
 }
 
@@ -66,7 +67,8 @@ export const fetchWebsiteContent = async (websiteUrl: string): Promise<WebsiteCo
 
     return {
       success: true,
-      content: data.content
+      content: data.content,
+      imageUrl: data.imageUrl
     };
 
   } catch (error) {
@@ -133,9 +135,14 @@ export const extractRecipeFromWebsite = async (websiteUrl: string, language: str
       };
     }
 
+    // Add imageUrl from website content if available
+    const recipeWithImage = contentResult.imageUrl
+      ? { ...parsingResult, imageUrl: contentResult.imageUrl }
+      : parsingResult;
+
     return {
       success: true,
-      recipe: parsingResult,
+      recipe: recipeWithImage,
       content: cleanedContent
     };
 

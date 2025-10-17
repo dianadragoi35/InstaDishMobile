@@ -13,6 +13,7 @@ interface TranscriptApiResponse {
   success: boolean;
   transcript?: string;
   entries?: TranscriptEntry[];
+  imageUrl?: string;
   error?: string;
 }
 
@@ -42,6 +43,15 @@ function extractVideoId(url: string): string | null {
   }
 
   return null;
+}
+
+/**
+ * Get YouTube video thumbnail URL
+ * Uses maxresdefault for highest quality, with automatic fallback to lower resolutions
+ */
+function getYouTubeThumbnail(videoId: string): string {
+  // YouTube automatically falls back to hqdefault if maxresdefault doesn't exist
+  return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
 }
 
 /**
@@ -111,6 +121,10 @@ router.post('/transcript', async (req: Request, res: Response) => {
     const rawTranscript = transcriptArray.map(entry => entry.text).join(' ');
     const cleanedTranscript = cleanTranscriptForRecipe(rawTranscript);
 
+    // Get video thumbnail URL
+    const thumbnailUrl = getYouTubeThumbnail(videoId);
+    console.log('🖼️ Generated thumbnail URL:', thumbnailUrl);
+
     console.log('📊 Transcript processing complete:', {
       rawLength: rawTranscript.length,
       cleanedLength: cleanedTranscript.length,
@@ -127,7 +141,8 @@ router.post('/transcript', async (req: Request, res: Response) => {
     const response: TranscriptApiResponse = {
       success: true,
       transcript: cleanedTranscript,
-      entries
+      entries,
+      imageUrl: thumbnailUrl
     };
 
     return res.json(response);

@@ -13,6 +13,7 @@ export interface TranscriptResult {
   success: boolean;
   transcript?: string;
   entries?: TranscriptEntry[];
+  imageUrl?: string;
   error?: string;
 }
 
@@ -95,7 +96,8 @@ export const fetchYouTubeTranscript = async (youtubeUrl: string): Promise<Transc
     return {
       success: true,
       transcript: data.transcript,
-      entries: data.entries || []
+      entries: data.entries || [],
+      imageUrl: data.imageUrl
     };
 
   } catch (error) {
@@ -165,9 +167,14 @@ export const extractRecipeFromYouTubeVideo = async (youtubeUrl: string, language
       };
     }
 
+    // Add imageUrl from transcript if available
+    const recipeWithImage = transcriptResult.imageUrl
+      ? { ...parsingResult, imageUrl: transcriptResult.imageUrl }
+      : parsingResult;
+
     return {
       success: true,
-      recipe: parsingResult,
+      recipe: recipeWithImage,
       transcript: cleanedTranscript,
       videoId: extractVideoId(youtubeUrl) || undefined
     };

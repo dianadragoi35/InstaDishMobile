@@ -1,10 +1,12 @@
 import express, { Request, Response } from 'express';
+import * as cheerio from 'cheerio';
 
 const router = express.Router();
 
 export interface WebsiteApiResponse {
   success: boolean;
   content?: string;
+  imageUrl?: string;
   error?: string;
 }
 
@@ -52,6 +54,33 @@ function cleanHtmlForRecipe(html: string): string {
     .replace(/\n\s*\n/g, '\n')
     .replace(/^[\s\n]+|[\s\n]+$/g, '')
     .trim();
+}
+
+/**
+ * Extract image URL from HTML using OpenGraph and Twitter meta tags
+ */
+function extractImageUrl(html: string): string | null {
+  try {
+    const $ = cheerio.load(html);
+
+    // Try OpenGraph image first (most common for recipe sites)
+    const ogImage = $('meta[property="og:image"]').attr('content');
+    if (ogImage && ogImage.trim()) {
+      return ogImage.trim();
+    }
+
+    // Fall back to Twitter image
+    const twitterImage = $('meta[name="twitter:image"]').attr('content');
+    if (twitterImage && twitterImage.trim()) {
+      return twitterImage.trim();
+    }
+
+    // No image found
+    return null;
+  } catch (error) {
+    console.warn('Failed to extract image URL:', error);
+    return null;
+  }
 }
 
 /**
@@ -144,6 +173,14 @@ router.post('/content', async (req: Request, res: Response) => {
 
       console.log('📄 HTML fetched, length:', html.length);
 
+      // Extract image URL from HTML
+      const imageUrl = extractImageUrl(html);
+      if (imageUrl) {
+        console.log('🖼️ Image extracted:', imageUrl);
+      } else {
+        console.log('⚠️ No image found in page');
+      }
+
       // Clean HTML for recipe parsing
       const cleanedContent = cleanHtmlForRecipe(html);
 
@@ -159,7 +196,8 @@ router.post('/content', async (req: Request, res: Response) => {
 
       const apiResponse: WebsiteApiResponse = {
         success: true,
-        content: cleanedContent
+        content: cleanedContent,
+        imageUrl: imageUrl || undefined
       };
 
       console.log('✅ Website content extraction successful');
