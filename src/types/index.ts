@@ -65,6 +65,7 @@ export interface ParseRecipeResponse {
   prepTime: string;
   cookTime: string;
   servings: string;
+  imageUrl?: string;
   steps?: RecipeStep[];
   ingredients: Array<{
     name: string;

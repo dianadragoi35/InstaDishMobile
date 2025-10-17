@@ -230,6 +230,7 @@ export default function AddRecipeScreen() {
         prepTime: parsedRecipe.prepTime,
         cookTime: parsedRecipe.cookTime,
         servings: parsedRecipe.servings,
+        imageUrl: parsedRecipe.imageUrl,
         steps: parsedRecipe.steps,
         sourceUrl,
       });
