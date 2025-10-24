@@ -25,7 +25,10 @@ export type RecipesStackParamList = {
   AddRecipe: undefined;
   EditRecipe: { recipeId: string };
   GenerateRecipe: undefined;
-  CookingMode: { steps: Array<{ instruction: string; time?: string | null; imageUrl?: string | null }> };
+  CookingMode: {
+    recipeId: string;
+    steps: Array<{ instruction: string; time?: string | null; imageUrl?: string | null }>
+  };
   Account: undefined;
 };
 

@@ -2,9 +2,13 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { RecipeStep } from '../types';
+import { detectPrimaryTime } from '../utils/timeDetection';
+import StepTimer from './StepTimer';
 
 interface StepCardProps {
+  recipeId: string;
   step: RecipeStep;
+  stepIndex: number;
   stepNumber: number;
   totalSteps: number;
 }
@@ -13,7 +17,28 @@ interface StepCardProps {
  * StepCard Component
  * Displays a single recipe step in cooking mode with large, readable text
  */
-export default function StepCard({ step, stepNumber, totalSteps }: StepCardProps) {
+export default function StepCard({ recipeId, step, stepIndex, stepNumber, totalSteps }: StepCardProps) {
+  // Check for time in two ways:
+  // 1. Auto-detect from text (for English recipes)
+  // 2. Use existing step.time field (for all recipes, including Romanian)
+  const detectedTime = detectPrimaryTime(step.instruction);
+
+  // Convert step.time (string minutes) to seconds for timer
+  let timerDuration: number | null = null;
+  if (detectedTime) {
+    timerDuration = detectedTime.duration;
+  } else if (step.time) {
+    // Parse step.time - could be "25" or "25 min" or "1-2"
+    const timeStr = step.time.toString().trim();
+    console.log('Parsing step.time:', timeStr, 'for step', stepIndex);
+    const numMatch = timeStr.match(/(\d+)/);
+    if (numMatch) {
+      const minutes = parseInt(numMatch[1], 10);
+      timerDuration = minutes * 60; // Convert to seconds
+      console.log('Parsed minutes:', minutes, '→ duration:', timerDuration);
+    }
+  }
+
   return (
     <View style={styles.container}>
       {/* Step Progress Indicator */}
@@ -31,12 +56,14 @@ export default function StepCard({ step, stepNumber, totalSteps }: StepCardProps
       {/* Step Instruction */}
       <Text style={styles.instructionText}>{step.instruction}</Text>
 
-      {/* Optional Timer */}
-      {step.time && (
-        <View style={styles.timerContainer}>
-          <MaterialCommunityIcons name="clock-outline" size={24} color="#D97706" />
-          <Text style={styles.timerText}>{step.time} min</Text>
-        </View>
+      {/* Interactive Timer (if time is available) */}
+      {timerDuration && (
+        <StepTimer
+          recipeId={recipeId}
+          stepIndex={stepIndex}
+          duration={timerDuration}
+          stepText={step.instruction}
+        />
       )}
     </View>
   );

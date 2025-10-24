@@ -118,7 +118,7 @@ export default function RecipeDetailScreen() {
       return;
     }
 
-    navigation.navigate('CookingMode', { steps: displaySteps });
+    navigation.navigate('CookingMode', { recipeId: recipe.id, steps: displaySteps });
   };
 
   /**
