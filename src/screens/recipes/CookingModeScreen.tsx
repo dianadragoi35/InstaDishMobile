@@ -11,6 +11,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
+import * as Brightness from 'expo-brightness';
 import { RecipesStackParamList } from '../../navigation/AppNavigator';
 import { RecipeStep } from '../../types';
 import StepCard from '../../components/StepCard';
@@ -24,11 +25,14 @@ type CookingModeScreenNavigationProp = NativeStackNavigationProp<
 
 /**
  * Cooking Mode Screen
- * Full-screen immersive interface for step-by-step cooking instructions
+ * Kitchen-optimized full-screen interface for step-by-step cooking instructions
  * Features:
  * - Tap left/right sides of screen to navigate
  * - Full-screen layout with hidden nav bars
- * - Large, readable step instructions
+ * - Large, readable step instructions (28pt)
+ * - Auto-brightness boost for kitchen visibility
+ * - High contrast white background with dark text
+ * - Screen stay-awake during cooking
  */
 export default function CookingModeScreen() {
   const route = useRoute<CookingModeScreenRouteProp>();
@@ -50,6 +54,34 @@ export default function CookingModeScreen() {
 
     return () => {
       deactivateKeepAwake();
+    };
+  }, []);
+
+  // Auto-increase brightness for better visibility in kitchen
+  useEffect(() => {
+    let previousBrightness: number | undefined;
+
+    const setupBrightness = async () => {
+      try {
+        // Save current brightness level
+        previousBrightness = await Brightness.getBrightnessAsync();
+        // Set to maximum brightness for kitchen visibility
+        await Brightness.setBrightnessAsync(1.0);
+      } catch (error) {
+        console.warn('Failed to adjust brightness:', error);
+        // Brightness permission errors are non-critical, continue without brightness control
+      }
+    };
+
+    setupBrightness();
+
+    return () => {
+      // Restore previous brightness when exiting cooking mode
+      if (previousBrightness !== undefined) {
+        Brightness.setBrightnessAsync(previousBrightness).catch((error) => {
+          console.warn('Failed to restore brightness:', error);
+        });
+      }
     };
   }, []);
 
@@ -157,7 +189,7 @@ export default function CookingModeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF', // Pure white for maximum contrast
   },
   exitButton: {
     position: 'absolute',
@@ -167,14 +199,16 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.15,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   contentContainer: {
     flex: 1,
