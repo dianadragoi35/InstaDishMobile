@@ -13,6 +13,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { RecipesStackParamList } from '../../navigation/AppNavigator';
 import { RecipeStep } from '../../types';
 import StepCard from '../../components/StepCard';
+import ProgressIndicator from '../../components/ProgressIndicator';
 
 type CookingModeScreenRouteProp = RouteProp<RecipesStackParamList, 'CookingMode'>;
 type CookingModeScreenNavigationProp = NativeStackNavigationProp<
@@ -91,6 +92,12 @@ export default function CookingModeScreen() {
     <View style={styles.container}>
       <StatusBar hidden />
 
+      {/* Progress Indicator */}
+      <ProgressIndicator
+        currentStep={currentStepIndex + 1}
+        totalSteps={steps.length}
+      />
+
       {/* Exit Button */}
       <TouchableOpacity style={styles.exitButton} onPress={exitCookingMode}>
         <MaterialCommunityIcons name="close" size={28} color="#111827" />
@@ -142,7 +149,7 @@ const styles = StyleSheet.create({
   },
   exitButton: {
     position: 'absolute',
-    top: 50,
+    top: 70,
     left: 20,
     zIndex: 10,
     width: 48,
