@@ -10,13 +10,14 @@ import {
   Alert,
   Clipboard,
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { aiParsingService } from '../../services/aiParsingService';
 import { youtubeService } from '../../services/youtubeService';
 import { websiteService } from '../../services/websiteService';
 import { useRecipes } from '../../hooks/useRecipes';
+import { useUserPreferences } from '../../hooks/useUserPreferences';
+import { LANGUAGE_OPTIONS } from '../../services/userPreferencesService';
 import { ParseRecipeResponse } from '../../types';
 
 type InputTab = 'text' | 'youtube' | 'website';
@@ -24,6 +25,7 @@ type InputTab = 'text' | 'youtube' | 'website';
 export default function AddRecipeScreen() {
   const navigation = useNavigation();
   const { createRecipeAsync } = useRecipes();
+  const { preferences } = useUserPreferences();
 
   // Tab state
   const [activeTab, setActiveTab] = useState<InputTab>('website');
@@ -32,7 +34,17 @@ export default function AddRecipeScreen() {
   const [recipeText, setRecipeText] = useState('');
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [websiteUrl, setWebsiteUrl] = useState('');
-  const [language, setLanguage] = useState('English');
+
+  // Get language name from user preferences language code
+  const getLanguageName = (code: string | undefined): string => {
+    if (!code) return 'English';
+    const option = LANGUAGE_OPTIONS.find(opt => opt.code === code);
+    // Extract just the language name (before any parentheses)
+    const label = option?.label || 'English';
+    return label.split(' (')[0];
+  };
+
+  const language = getLanguageName(preferences?.recipeLanguage);
 
   // Parsing state
   const [isParsing, setIsParsing] = useState(false);
@@ -412,22 +424,6 @@ export default function AddRecipeScreen() {
               />
             </View>
           )}
-
-          <View style={styles.section}>
-            <Text style={styles.label}>Language</Text>
-            <Picker
-              selectedValue={language}
-              onValueChange={(value) => setLanguage(value)}
-            >
-              <Picker.Item label="English" value="English" />
-              <Picker.Item label="Romanian" value="Romanian" />
-              <Picker.Item label='Dutch' value='Dutch' />
-              <Picker.Item label="Spanish" value="Spanish" />
-              <Picker.Item label="French" value="French" />
-              <Picker.Item label="German" value="German" />
-              <Picker.Item label="Italian" value="Italian" />
-            </Picker>
-          </View>
 
           <TouchableOpacity
             style={[styles.button, styles.parseButton, isParsing && styles.buttonDisabled]}

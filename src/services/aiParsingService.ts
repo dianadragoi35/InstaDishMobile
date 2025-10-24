@@ -1,5 +1,7 @@
 import { ParseRecipeRequest, ParseRecipeResponse } from '../types';
 import Constants from 'expo-constants';
+import { getUserPreferences } from './userPreferencesService';
+import { LANGUAGE_OPTIONS } from './userPreferencesService';
 
 const API_BASE_URL = Constants.expoConfig?.extra?.apiBaseUrl || process.env.EXPO_PUBLIC_API_BASE_URL;
 
@@ -81,6 +83,7 @@ export const aiParsingService = {
   /**
    * Parse recipe text using AI backend API
    * Includes automatic retry logic for network failures
+   * Uses user's preferred recipe language if not specified
    * @param request - Recipe parsing request with recipe text and optional language
    * @returns Parsed recipe data with structured ingredients and metadata
    * @throws Error if API call fails after all retries or if validation fails
@@ -97,6 +100,22 @@ export const aiParsingService = {
       );
     }
 
+    // Get user's language preference if not specified in request
+    let language = request.language;
+    if (!language) {
+      try {
+        const preferences = await getUserPreferences();
+        const languageOption = LANGUAGE_OPTIONS.find(
+          (opt) => opt.code === preferences.recipeLanguage
+        );
+        language = languageOption?.label || 'English';
+      } catch (error) {
+        // If preferences fetch fails, default to English
+        console.warn('Failed to fetch user preferences, defaulting to English:', error);
+        language = 'English';
+      }
+    }
+
     // Attempt API call with retry logic
     let lastError: Error | null = null;
 
@@ -109,7 +128,7 @@ export const aiParsingService = {
           },
           body: JSON.stringify({
             recipeText: request.recipeText.trim(),
-            language: request.language || 'English',
+            language: language,
           }),
         });
 

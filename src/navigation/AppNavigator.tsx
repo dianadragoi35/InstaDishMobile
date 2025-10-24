@@ -16,6 +16,7 @@ import CookingModeScreen from '../screens/recipes/CookingModeScreen';
 import GroceryListsScreen from '../screens/grocery/GroceryListsScreen';
 import GroceryListDetailScreen from '../screens/grocery/GroceryListDetailScreen';
 import ShoppingListScreen from '../screens/grocery/ShoppingListScreen';
+import AccountScreen from '../screens/account/AccountScreen';
 
 // Navigation type definitions
 export type RecipesStackParamList = {
@@ -25,6 +26,7 @@ export type RecipesStackParamList = {
   EditRecipe: { recipeId: string };
   GenerateRecipe: undefined;
   CookingMode: { steps: Array<{ instruction: string; time?: string | null; imageUrl?: string | null }> };
+  Account: undefined;
 };
 
 export type GroceryStackParamList = {
@@ -49,38 +51,19 @@ const ShoppingStack = createNativeStackNavigator<ShoppingStackParamList>();
 
 /**
  * Recipes Stack Navigator
- * Contains: RecipesList -> RecipeDetail, AddRecipe, EditRecipe
+ * Contains: RecipesList -> RecipeDetail, AddRecipe, EditRecipe, Account
  */
 function RecipesNavigator() {
-  const { signOut } = useAuth();
-
-  async function handleSignOut(): Promise<void> {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Sign Out',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await signOut();
-          } catch (error) {
-            Alert.alert('Error', 'Failed to sign out');
-          }
-        },
-      },
-    ]);
-  }
-
   return (
     <RecipesStack.Navigator>
       <RecipesStack.Screen
         name="RecipesList"
         component={RecipesListScreen}
-        options={{
+        options={({ navigation }) => ({
           title: 'My Recipes',
           headerRight: () => (
             <TouchableOpacity
-              onPress={handleSignOut}
+              onPress={() => navigation.navigate('Account')}
               style={{
                 padding: 8,
                 marginRight: 8,
@@ -88,10 +71,10 @@ function RecipesNavigator() {
                 alignItems: 'center',
               }}
             >
-              <MaterialCommunityIcons name="logout" size={24} color="#D97706" />
+              <MaterialCommunityIcons name="account-circle" size={24} color="#D97706" />
             </TouchableOpacity>
           ),
-        }}
+        })}
       />
       <RecipesStack.Screen
         name="RecipeDetail"
@@ -116,6 +99,11 @@ function RecipesNavigator() {
           headerShown: false,
           animation: 'slide_from_bottom',
         }}
+      />
+      <RecipesStack.Screen
+        name="Account"
+        component={AccountScreen}
+        options={{ title: 'Account' }}
       />
     </RecipesStack.Navigator>
   );

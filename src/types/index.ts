@@ -160,3 +160,16 @@ export interface AuthSession {
   accessToken: string;
   refreshToken: string;
 }
+
+// User Preferences types
+export interface UserPreferences {
+  id: string;
+  userId: string;
+  recipeLanguage: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateUserPreferencesRequest {
+  recipeLanguage?: string;
+}
