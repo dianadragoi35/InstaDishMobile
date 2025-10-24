@@ -32,7 +32,7 @@ type CookingModeScreenNavigationProp = NativeStackNavigationProp<
 export default function CookingModeScreen() {
   const route = useRoute<CookingModeScreenRouteProp>();
   const navigation = useNavigation<CookingModeScreenNavigationProp>();
-  const { steps } = route.params;
+  const { recipeId, steps } = route.params;
 
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
 
@@ -117,7 +117,9 @@ export default function CookingModeScreen() {
             {/* Step Card in Center */}
             <View style={styles.stepCardContainer}>
               <StepCard
+                recipeId={recipeId}
                 step={currentStep}
+                stepIndex={currentStepIndex}
                 stepNumber={currentStepIndex + 1}
                 totalSteps={steps.length}
               />

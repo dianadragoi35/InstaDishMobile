@@ -3,6 +3,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './src/config/queryClient';
 import AppNavigator from './src/navigation/AppNavigator';
 import { AuthProvider, useAuth } from './src/hooks/useAuth';
+import { TimerProvider } from './src/contexts/TimerContext';
 import AuthScreen from './src/screens/auth/AuthScreen';
 import ResetPasswordScreen from './src/screens/auth/ResetPasswordScreen';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
@@ -125,7 +126,9 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <AppContent />
+        <TimerProvider>
+          <AppContent />
+        </TimerProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
