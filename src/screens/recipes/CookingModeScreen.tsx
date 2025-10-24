@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -16,6 +17,8 @@ import { RecipesStackParamList } from '../../navigation/AppNavigator';
 import { RecipeStep } from '../../types';
 import StepCard from '../../components/StepCard';
 import ProgressIndicator from '../../components/ProgressIndicator';
+import { useUserPreferences } from '../../hooks/useUserPreferences';
+import { narrateStep, stopNarration, isSpeaking } from '../../services/narrationService';
 
 type CookingModeScreenRouteProp = RouteProp<RecipesStackParamList, 'CookingMode'>;
 type CookingModeScreenNavigationProp = NativeStackNavigationProp<
@@ -38,8 +41,10 @@ export default function CookingModeScreen() {
   const route = useRoute<CookingModeScreenRouteProp>();
   const navigation = useNavigation<CookingModeScreenNavigationProp>();
   const { recipeId, steps } = route.params;
+  const { preferences } = useUserPreferences();
 
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [isNarrating, setIsNarrating] = useState(false);
 
   // Hide status bar for immersive experience
   React.useLayoutEffect(() => {
@@ -54,6 +59,13 @@ export default function CookingModeScreen() {
 
     return () => {
       deactivateKeepAwake();
+    };
+  }, []);
+
+  // Cleanup narration on unmount
+  useEffect(() => {
+    return () => {
+      stopNarration();
     };
   }, []);
 
@@ -86,10 +98,61 @@ export default function CookingModeScreen() {
   }, []);
 
   /**
+   * Auto-narrate step when it changes (if enabled in preferences)
+   */
+  useEffect(() => {
+    const autoNarrateStep = async () => {
+      if (preferences?.autoNarrate && currentStep) {
+        try {
+          await narrateStep(
+            currentStep.instruction,
+            preferences.recipeLanguage,
+            preferences.narrationSpeed
+          );
+        } catch (error) {
+          console.error('Auto-narration failed:', error);
+        }
+      }
+    };
+
+    autoNarrateStep();
+  }, [currentStepIndex, currentStep, preferences?.autoNarrate, preferences?.recipeLanguage, preferences?.narrationSpeed]);
+
+  /**
+   * Handle manual narration button press
+   */
+  const handleNarrate = useCallback(async () => {
+    try {
+      const speaking = await isSpeaking();
+
+      if (speaking) {
+        // Stop if currently speaking
+        await stopNarration();
+        setIsNarrating(false);
+      } else {
+        // Start narration
+        setIsNarrating(true);
+        const step = steps[currentStepIndex];
+        await narrateStep(
+          step.instruction,
+          preferences?.recipeLanguage || 'en',
+          preferences?.narrationSpeed || 1.0
+        );
+        setIsNarrating(false);
+      }
+    } catch (error) {
+      console.error('Narration failed:', error);
+      setIsNarrating(false);
+    }
+  }, [steps, currentStepIndex, preferences]);
+
+  /**
    * Navigate to next step
    */
-  const goToNextStep = useCallback(() => {
+  const goToNextStep = useCallback(async () => {
     if (currentStepIndex < steps.length - 1) {
+      await stopNarration();
+      setIsNarrating(false);
       setCurrentStepIndex(currentStepIndex + 1);
     }
   }, [currentStepIndex, steps.length]);
@@ -97,8 +160,10 @@ export default function CookingModeScreen() {
   /**
    * Navigate to previous step
    */
-  const goToPreviousStep = useCallback(() => {
+  const goToPreviousStep = useCallback(async () => {
     if (currentStepIndex > 0) {
+      await stopNarration();
+      setIsNarrating(false);
       setCurrentStepIndex(currentStepIndex - 1);
     }
   }, [currentStepIndex]);
@@ -143,6 +208,23 @@ export default function CookingModeScreen() {
       {/* Exit Button */}
       <TouchableOpacity style={styles.exitButton} onPress={exitCookingMode}>
         <MaterialCommunityIcons name="close" size={28} color="#111827" />
+      </TouchableOpacity>
+
+      {/* Narration Button */}
+      <TouchableOpacity
+        style={styles.narrateButton}
+        onPress={handleNarrate}
+        disabled={isNarrating}
+      >
+        {isNarrating ? (
+          <ActivityIndicator size="small" color="#D97706" />
+        ) : (
+          <MaterialCommunityIcons
+            name="volume-high"
+            size={28}
+            color="#D97706"
+          />
+        )}
       </TouchableOpacity>
 
       {/* Main Content */}
@@ -209,6 +291,25 @@ const styles = StyleSheet.create({
     elevation: 4,
     borderWidth: 1,
     borderColor: '#E5E7EB',
+  },
+  narrateButton: {
+    position: 'absolute',
+    top: 70,
+    right: 20,
+    zIndex: 10,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#FCD34D',
   },
   contentContainer: {
     flex: 1,

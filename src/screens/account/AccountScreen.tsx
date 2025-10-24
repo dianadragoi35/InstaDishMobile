@@ -7,8 +7,10 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Switch,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import Slider from '@react-native-community/slider';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../hooks/useAuth';
 import { useUserPreferences } from '../../hooks/useUserPreferences';
@@ -24,17 +26,38 @@ export default function AccountScreen() {
   const [selectedLanguage, setSelectedLanguage] = useState<string>(
     preferences?.recipeLanguage || 'en'
   );
+  const [autoNarrate, setAutoNarrate] = useState<boolean>(
+    preferences?.autoNarrate || false
+  );
+  const [narrationSpeed, setNarrationSpeed] = useState<number>(
+    preferences?.narrationSpeed || 1.0
+  );
 
-  // Update selectedLanguage when preferences load
+  // Update state when preferences load
   React.useEffect(() => {
-    if (preferences?.recipeLanguage) {
+    if (preferences) {
       setSelectedLanguage(preferences.recipeLanguage);
+      setAutoNarrate(preferences.autoNarrate);
+      setNarrationSpeed(preferences.narrationSpeed);
     }
   }, [preferences]);
 
   const handleLanguageChange = (languageCode: string) => {
     setSelectedLanguage(languageCode);
     updatePreferences({ recipeLanguage: languageCode });
+  };
+
+  const handleAutoNarrateChange = (value: boolean) => {
+    setAutoNarrate(value);
+    updatePreferences({ autoNarrate: value });
+  };
+
+  const handleNarrationSpeedChange = (value: number) => {
+    setNarrationSpeed(value);
+  };
+
+  const handleNarrationSpeedComplete = (value: number) => {
+    updatePreferences({ narrationSpeed: value });
   };
 
   const handleSignOut = async () => {
@@ -112,6 +135,51 @@ export default function AccountScreen() {
                 style={styles.pickerLoader}
               />
             )}
+          </View>
+
+          {/* Narration Settings */}
+          <View style={styles.divider} />
+
+          <View style={styles.settingRow}>
+            <View style={styles.settingInfo}>
+              <Text style={styles.label}>Auto-narrate Steps</Text>
+              <Text style={styles.helperText}>
+                Automatically read each step aloud in cooking mode
+              </Text>
+            </View>
+            <Switch
+              value={autoNarrate}
+              onValueChange={handleAutoNarrateChange}
+              trackColor={{ false: '#E5E7EB', true: '#FCD34D' }}
+              thumbColor={autoNarrate ? '#D97706' : '#F3F4F6'}
+              disabled={isUpdating}
+            />
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.settingColumn}>
+            <Text style={styles.label}>Narration Speed</Text>
+            <Text style={styles.helperText}>
+              Adjust how fast the instructions are read ({narrationSpeed.toFixed(1)}x)
+            </Text>
+            <View style={styles.sliderContainer}>
+              <Text style={styles.sliderLabel}>0.5x</Text>
+              <Slider
+                style={styles.slider}
+                minimumValue={0.5}
+                maximumValue={1.5}
+                step={0.1}
+                value={narrationSpeed}
+                onValueChange={handleNarrationSpeedChange}
+                onSlidingComplete={handleNarrationSpeedComplete}
+                minimumTrackTintColor="#D97706"
+                maximumTrackTintColor="#E5E7EB"
+                thumbTintColor="#D97706"
+                disabled={isUpdating}
+              />
+              <Text style={styles.sliderLabel}>1.5x</Text>
+            </View>
           </View>
         </View>
       </View>
@@ -216,6 +284,39 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 12,
     top: 15,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
+    marginVertical: 16,
+  },
+  settingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+  },
+  settingInfo: {
+    flex: 1,
+  },
+  settingColumn: {
+    gap: 4,
+  },
+  sliderContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+  },
+  slider: {
+    flex: 1,
+    height: 40,
+  },
+  sliderLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    width: 35,
+    textAlign: 'center',
   },
   signOutButton: {
     flexDirection: 'row',
