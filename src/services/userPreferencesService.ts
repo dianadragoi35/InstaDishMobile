@@ -39,6 +39,8 @@ export async function getUserPreferences(): Promise<UserPreferences> {
       id: data.id,
       userId: data.user_id,
       recipeLanguage: data.recipe_language,
+      autoNarrate: data.auto_narrate ?? false,
+      narrationSpeed: data.narration_speed ?? 1.0,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
     };
@@ -60,6 +62,8 @@ async function createDefaultPreferences(userId: string): Promise<UserPreferences
       .insert({
         user_id: userId,
         recipe_language: 'en',
+        auto_narrate: false,
+        narration_speed: 1.0,
       })
       .select()
       .single();
@@ -73,6 +77,8 @@ async function createDefaultPreferences(userId: string): Promise<UserPreferences
       id: data.id,
       userId: data.user_id,
       recipeLanguage: data.recipe_language,
+      autoNarrate: data.auto_narrate ?? false,
+      narrationSpeed: data.narration_speed ?? 1.0,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
     };
@@ -106,6 +112,12 @@ export async function updateUserPreferences(
     if (updates.recipeLanguage !== undefined) {
       dbUpdates.recipe_language = updates.recipeLanguage;
     }
+    if (updates.autoNarrate !== undefined) {
+      dbUpdates.auto_narrate = updates.autoNarrate;
+    }
+    if (updates.narrationSpeed !== undefined) {
+      dbUpdates.narration_speed = updates.narrationSpeed;
+    }
 
     const { data, error } = await supabase
       .from('user_preferences')
@@ -123,6 +135,8 @@ export async function updateUserPreferences(
       id: data.id,
       userId: data.user_id,
       recipeLanguage: data.recipe_language,
+      autoNarrate: data.auto_narrate ?? false,
+      narrationSpeed: data.narration_speed ?? 1.0,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
     };

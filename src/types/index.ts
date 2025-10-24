@@ -166,10 +166,14 @@ export interface UserPreferences {
   id: string;
   userId: string;
   recipeLanguage: string;
+  autoNarrate: boolean;
+  narrationSpeed: number;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface UpdateUserPreferencesRequest {
   recipeLanguage?: string;
+  autoNarrate?: boolean;
+  narrationSpeed?: number;
 }
