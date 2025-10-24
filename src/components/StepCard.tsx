@@ -74,8 +74,9 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 40,
+    paddingHorizontal: 24,
+    paddingVertical: 32,
+    maxWidth: 800, // Max width for large screens/tablets
   },
   progressContainer: {
     position: 'absolute',
@@ -83,7 +84,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   progressText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: '#6B7280',
   },
@@ -104,9 +105,10 @@ const styles = StyleSheet.create({
     color: '#D97706',
   },
   instructionText: {
-    fontSize: 26,
-    lineHeight: 38,
-    color: '#111827',
+    fontSize: 28,
+    lineHeight: 40,
+    fontWeight: '500',
+    color: '#1F2937',
     textAlign: 'left',
     paddingHorizontal: 20,
   },
