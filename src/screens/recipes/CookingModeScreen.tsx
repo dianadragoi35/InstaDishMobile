@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { RecipesStackParamList } from '../../navigation/AppNavigator';
 import { RecipeStep } from '../../types';
 import StepCard from '../../components/StepCard';
@@ -42,6 +43,15 @@ export default function CookingModeScreen() {
       headerShown: false,
     });
   }, [navigation]);
+
+  // Keep screen awake during cooking mode
+  useEffect(() => {
+    activateKeepAwakeAsync();
+
+    return () => {
+      deactivateKeepAwake();
+    };
+  }, []);
 
   /**
    * Navigate to next step
