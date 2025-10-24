@@ -6,13 +6,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 InstaDish is a React Native recipe management app built with Expo. This is a **brownfield migration** from a Next.js web app (originally using Notion API) to a mobile-first React Native app with PostgreSQL/Supabase backend.
 
-**Current Features (Phase 1):**
-- AI-powered recipe parsing from text/URLs (Google Gemini)
-- Personal recipe database with CRUD operations
-- Grocery lists and shopping lists
-- Authentication with password reset flow
+**Current Features:**
+- **Phase 1:**
+  - AI-powered recipe parsing from text/URLs (Google Gemini)
+  - Personal recipe database with CRUD operations
+  - Grocery lists and shopping lists
+  - Authentication with password reset flow
+- **Phase 2:**
+  - Cooking mode with voice narration (Issue #56)
+  - Animated cooking character (Duolingo-style, Issue #57)
+  - Screen keep-awake and brightness boost
+  - Step-by-step navigation with timers
 
-**Tech Stack:** React Native 0.81.4, Expo 54, TypeScript (strict), Supabase, TanStack Query v5, React Navigation v7, React Native Paper
+**Tech Stack:** React Native 0.81.4, Expo 54, TypeScript (strict), Supabase, TanStack Query v5, React Navigation v7, React Native Paper, Lottie React Native
 
 ## Commands
 
@@ -58,6 +64,61 @@ Note: EAS CLI >= 16.22.0 required. Project ID: `e77e1448-df18-4828-a3ac-9e01fef3
 - `RecipesStackParamList`: RecipesList, RecipeDetail, AddRecipe, EditRecipe
 - `GroceryStackParamList`: GroceryLists, GroceryListDetail
 - `ShoppingStackParamList`: ShoppingList
+
+### Animated Cooking Character (Issue #57)
+**Overview:**
+Duolingo-style animated character that provides visual engagement and encouragement during cooking mode. Uses Lottie animations for smooth, performant character states.
+
+**Components:**
+- **CookingCharacter** (`src/components/cooking/CookingCharacter.tsx`)
+  - Displays Lottie animations with smooth opacity transitions
+  - Two position modes: 'inline' (replaces step number badge) or 'absolute' (bottom-right corner)
+  - Handles looping vs one-shot animations automatically
+  - Pointer events disabled (doesn't block touch interactions)
+  - Configurable size (default 100px in inline mode)
+
+**State Management:**
+- **useCharacterAnimation** (`src/hooks/useCharacterAnimation.ts`)
+  - Animation priority system (Alert > Celebration > Speaking > Idle)
+  - One-shot animation support (auto-return to idle after duration)
+  - Prevents lower-priority animations from interrupting higher-priority ones
+
+**Animation States:**
+```typescript
+enum CharacterAnimation {
+  Idle,          // Default looping (70% opacity)
+  Speaking,      // During voice narration (100% opacity)
+  Celebration,   // Final step looping (100% opacity)
+  TimerAlert,    // On timer completion (5s one-shot)
+}
+```
+
+**Animation Triggers:**
+- **Idle**: Default state on steps 1 through second-to-last
+- **Speaking**: Active only while voice is actually speaking (polled via `isSpeaking()` every 100ms) - takes priority on any step
+- **Celebration**: Loops continuously when on the final step (unless speaking)
+- **TimerAlert**: One-shot (5s) when timer status becomes `COMPLETED`
+
+**Animation Assets:**
+- Location: `src/assets/animations/`
+- Format: Lottie JSON (~50-120KB per file)
+- Files: `chef-idle.json`, `chef-talking.json`, `chef-celebrate.json`, `chef-alert.json`
+- Note: Current animations are simple placeholders - see `src/assets/animations/README.md` for downloading better animations from LottieFiles
+
+**Configuration:**
+- Size: 100px (configurable via component prop)
+- Position: Inline mode - replaces step number badge at top-center of StepCard
+- Z-index: N/A (inline flow with step card)
+- Opacity: 0.7 (idle), 1.0 (active animations)
+
+**Integration Points:**
+- **StepCard** component receives character via `renderCharacter` prop
+- CookingModeScreen monitors:
+  - `isNarrating` state → Speaking animation
+  - Timer context → TimerAlert on completion
+  - Step navigation → Celebration animation
+- Animations preloaded on screen mount for smooth transitions
+- Character replaces the round orange step number badge in cooking mode
 
 ### Database Schema (Supabase PostgreSQL)
 

@@ -4,6 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { RecipeStep } from '../types';
 import { detectPrimaryTime } from '../utils/timeDetection';
 import StepTimer from './StepTimer';
+import { CharacterAnimation } from '../types/character';
 
 interface StepCardProps {
   recipeId: string;
@@ -11,13 +12,22 @@ interface StepCardProps {
   stepIndex: number;
   stepNumber: number;
   totalSteps: number;
+  characterAnimation?: CharacterAnimation; // Optional character animation state
+  renderCharacter?: () => React.ReactNode; // Optional character component renderer
 }
 
 /**
  * StepCard Component
  * Displays a single recipe step in cooking mode with large, readable text
  */
-export default function StepCard({ recipeId, step, stepIndex, stepNumber, totalSteps }: StepCardProps) {
+export default function StepCard({
+  recipeId,
+  step,
+  stepIndex,
+  stepNumber,
+  totalSteps,
+  renderCharacter,
+}: StepCardProps) {
   // Check for time in two ways:
   // 1. Auto-detect from text (for English recipes)
   // 2. Use existing step.time field (for all recipes, including Romanian)
@@ -48,10 +58,16 @@ export default function StepCard({ recipeId, step, stepIndex, stepNumber, totalS
         </Text>
       </View>
 
-      {/* Step Number Badge */}
-      <View style={styles.stepNumberBadge}>
-        <Text style={styles.stepNumberText}>{stepNumber}</Text>
-      </View>
+      {/* Character or Step Number Badge */}
+      {renderCharacter ? (
+        <View style={styles.characterContainer}>
+          {renderCharacter()}
+        </View>
+      ) : (
+        <View style={styles.stepNumberBadge}>
+          <Text style={styles.stepNumberText}>{stepNumber}</Text>
+        </View>
+      )}
 
       {/* Step Instruction */}
       <Text style={styles.instructionText}>{step.instruction}</Text>
@@ -87,6 +103,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: '#6B7280',
+  },
+  characterContainer: {
+    width: 100,
+    height: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 32,
   },
   stepNumberBadge: {
     width: 80,
