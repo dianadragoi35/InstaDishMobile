@@ -47,13 +47,14 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-asset"
     ],
     "extra": {
       "eas": {
         "projectId": "e77e1448-df18-4828-a3ac-9e01fef30b33"
       },
-      "apiBaseUrl": "http://192.168.2.27:3000"
+      "apiBaseUrl": "http://192.168.1.134:3000"
     }
   }
 }

@@ -13,12 +13,18 @@ import { RouteProp } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import * as Brightness from 'expo-brightness';
+import * as Asset from 'expo-asset';
 import { RecipesStackParamList } from '../../navigation/AppNavigator';
 import { RecipeStep } from '../../types';
 import StepCard from '../../components/StepCard';
 import ProgressIndicator from '../../components/ProgressIndicator';
 import { useUserPreferences } from '../../hooks/useUserPreferences';
 import { narrateStep, stopNarration, isSpeaking } from '../../services/narrationService';
+import { CookingCharacter } from '../../components/cooking/CookingCharacter';
+import { useCharacterAnimation } from '../../hooks/useCharacterAnimation';
+import { CharacterAnimation, ANIMATION_SOURCES } from '../../types/character';
+import { useTimer } from '../../contexts/TimerContext';
+import { TimerStatus } from '../../contexts/TimerContext';
 
 type CookingModeScreenRouteProp = RouteProp<RecipesStackParamList, 'CookingMode'>;
 type CookingModeScreenNavigationProp = NativeStackNavigationProp<
@@ -42,9 +48,21 @@ export default function CookingModeScreen() {
   const navigation = useNavigation<CookingModeScreenNavigationProp>();
   const { recipeId, steps } = route.params;
   const { preferences } = useUserPreferences();
+  const { getTimer } = useTimer();
 
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isNarrating, setIsNarrating] = useState(false);
+
+  // Current step derived from index
+  const currentStep = steps[currentStepIndex];
+
+  // Character animation management
+  const {
+    currentAnimation,
+    setAnimation,
+    playOneShot,
+    resetToIdle,
+  } = useCharacterAnimation();
 
   // Hide status bar for immersive experience
   React.useLayoutEffect(() => {
@@ -66,8 +84,9 @@ export default function CookingModeScreen() {
   useEffect(() => {
     return () => {
       stopNarration();
+      resetToIdle(); // Reset character animation on unmount
     };
-  }, []);
+  }, [resetToIdle]);
 
   // Auto-increase brightness for better visibility in kitchen
   useEffect(() => {
@@ -98,19 +117,91 @@ export default function CookingModeScreen() {
   }, []);
 
   /**
+   * Preload character animations for smooth transitions
+   */
+  useEffect(() => {
+    const preloadAnimations = async () => {
+      try {
+        // Preload all animation assets
+        const animationAssets = Object.values(ANIMATION_SOURCES).map((source) =>
+          Asset.Asset.fromModule(source)
+        );
+        await Promise.all(animationAssets.map((asset) => asset.downloadAsync()));
+      } catch (error) {
+        console.warn('Failed to preload character animations:', error);
+        // Non-critical error, character will still work but may have slight delay on first use
+      }
+    };
+
+    preloadAnimations();
+  }, []);
+
+  /**
+   * Sync character animation with actual speech status (polling)
+   * This ensures chef-talking only shows when voice is actively speaking
+   */
+  useEffect(() => {
+    let pollInterval: NodeJS.Timeout | null = null;
+
+    const checkSpeakingStatus = async () => {
+      const speaking = await isSpeaking();
+      const isOnFinalStep = currentStepIndex === steps.length - 1;
+
+      if (speaking) {
+        // Voice is actively speaking - show talking animation
+        setAnimation(CharacterAnimation.Speaking);
+      } else if (isOnFinalStep) {
+        // On final step and not speaking - show celebration
+        setAnimation(CharacterAnimation.Celebration);
+      } else {
+        // Default idle animation
+        setAnimation(CharacterAnimation.Idle);
+      }
+    };
+
+    // Check immediately
+    checkSpeakingStatus();
+
+    // Poll speaking status every 100ms for smooth transitions
+    pollInterval = setInterval(checkSpeakingStatus, 100);
+
+    return () => {
+      if (pollInterval) {
+        clearInterval(pollInterval);
+      }
+    };
+  }, [currentStepIndex, steps.length, setAnimation]);
+
+  /**
+   * Monitor timer status and trigger alert animation on completion
+   */
+  useEffect(() => {
+    const timerId = `${recipeId}-${currentStepIndex}`;
+    const timer = getTimer(timerId);
+
+    if (timer && timer.status === TimerStatus.COMPLETED) {
+      // Play timer alert animation when timer completes
+      playOneShot(CharacterAnimation.TimerAlert, 5000);
+    }
+  }, [recipeId, currentStepIndex, getTimer, playOneShot]);
+
+  /**
    * Auto-narrate step when it changes (if enabled in preferences)
    */
   useEffect(() => {
     const autoNarrateStep = async () => {
       if (preferences?.autoNarrate && currentStep) {
         try {
+          setIsNarrating(true);
           await narrateStep(
             currentStep.instruction,
             preferences.recipeLanguage,
             preferences.narrationSpeed
           );
+          setIsNarrating(false);
         } catch (error) {
           console.error('Auto-narration failed:', error);
+          setIsNarrating(false);
         }
       }
     };
@@ -154,6 +245,7 @@ export default function CookingModeScreen() {
       await stopNarration();
       setIsNarrating(false);
       setCurrentStepIndex(currentStepIndex + 1);
+      // Note: Celebration animation now handled by useEffect based on step position
     }
   }, [currentStepIndex, steps.length]);
 
@@ -164,9 +256,14 @@ export default function CookingModeScreen() {
     if (currentStepIndex > 0) {
       await stopNarration();
       setIsNarrating(false);
+
+      // Reset to idle immediately when going backwards
+      // (useEffect will set correct animation based on destination step)
+      resetToIdle();
+
       setCurrentStepIndex(currentStepIndex - 1);
     }
-  }, [currentStepIndex]);
+  }, [currentStepIndex, resetToIdle]);
 
   /**
    * Exit cooking mode and return to recipe detail
@@ -192,8 +289,6 @@ export default function CookingModeScreen() {
       goToNextStep();
     }
   };
-
-  const currentStep = steps[currentStepIndex];
 
   return (
     <View style={styles.container}>
@@ -246,6 +341,13 @@ export default function CookingModeScreen() {
                 stepIndex={currentStepIndex}
                 stepNumber={currentStepIndex + 1}
                 totalSteps={steps.length}
+                renderCharacter={() => (
+                  <CookingCharacter
+                    currentAnimation={currentAnimation}
+                    position="inline"
+                    size={100}
+                  />
+                )}
               />
             </View>
 
